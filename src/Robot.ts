@@ -29,7 +29,7 @@ export class Robot {
 	this.direction = 0;
 	this.state = "";
 	this.time = 0;
-	this.debug = false;
+	this.debug = true;
 	this.vx = 0.0; // velocity in x direction
 	this.vy = 0.0; // velocity in y direction
 	this.va = 0.0; // turn velocity
@@ -278,31 +278,44 @@ export class Robot {
 	// update sensors, camera
 	// on right:
 	let p: number[] = this.rotateAround(this.x, this.y, 25/250.0 * scale, this.direction + Math.PI/8);
-	let hit: Hit = this.castRay(p[0], p[1], -this.direction + Math.PI/2.0, this.max_ir/250.0 * scale);
-	if (hit) {
-	    if (this.debug) {
-		canvas.fill(new Color(0, 255, 0));
-		canvas.ellipse(p[0], p[1], 5, 5);
-		canvas.ellipse(hit.x, hit.y, 5, 5);
+	this.ir_sensors[0] = null;
+	for (let incr = -0.5; incr <= 0.5; incr += 0.5) {
+	    let hit: Hit = this.castRay(
+		p[0], p[1], -this.direction + Math.PI/2.0  + incr,
+		this.max_ir/250.0 * scale);
+	    if (hit) {
+		if (this.debug) {
+		    canvas.fill(new Color(0, 255, 0));
+		    canvas.ellipse(p[0], p[1], 5, 5);
+		    canvas.ellipse(hit.x, hit.y, 5, 5);
+		}
+		if (this.ir_sensors[0] === null) {
+		    this.ir_sensors[0] = hit;
+		} else if (hit.distance < this.ir_sensors[0].distance) {
+		    this.ir_sensors[0] = hit;
+		}
 	    }
-	    this.ir_sensors[0] = hit;
-	} else {
-	    this.ir_sensors[0] = null;
 	}
-
+	// on left:
 	p = this.rotateAround(this.x, this.y, 25/250.0 * scale, this.direction - Math.PI/8);
-	hit = this.castRay(p[0], p[1], -this.direction + Math.PI/2, this.max_ir/250.0 * scale);
-	if (hit) {
-	    if (this.debug) {
-		canvas.fill(new Color(0, 0, 255));
-		canvas.ellipse(p[0], p[1], 5, 5);
-		canvas.ellipse(hit.x, hit.y, 5, 5);
+	this.ir_sensors[1] = null;
+	for (let incr = -0.5; incr <= 0.5; incr += 0.5) {
+	    let hit: Hit = this.castRay(
+		p[0], p[1], -this.direction + Math.PI/2 + incr,
+		this.max_ir/250.0 * scale);
+	    if (hit) {
+		if (this.debug) {
+		    canvas.fill(new Color(0, 0, 255));
+		    canvas.ellipse(p[0], p[1], 5, 5);
+		    canvas.ellipse(hit.x, hit.y, 5, 5);
+		}
+		if (this.ir_sensors[1] === null) {
+		    this.ir_sensors[1] = hit;
+		} else if (hit.distance < this.ir_sensors[1].distance) {
+		    this.ir_sensors[1] = hit;
+		}
 	    }
-	    this.ir_sensors[1] = hit;
-	} else {
-	    this.ir_sensors[1] = null;
 	}
-
 	// camera:
 	if (true) {
 	    for (let i=0; i<this.cameraShape[0]; i++) {
