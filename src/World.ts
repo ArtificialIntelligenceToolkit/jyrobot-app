@@ -3,7 +3,7 @@ import {Robot} from "./Robot";
 
 export class World {
     public time: number = 0;
-    public scale: number = 250;
+    public scale: number = 1.0;
     public at_x: number = 0;
     public at_y: number = 0;
     public w: number;
@@ -47,7 +47,7 @@ export class World {
 
     setScale(s: number) {
 	// scale the world... > 1 make it bigger
-	this.scale = s * 250;
+	this.scale = s;
     }
 
     addWall(c: Color, ...points: Point[]) {
@@ -68,6 +68,7 @@ export class World {
     }
 
     update(canvas: Canvas) {
+	canvas.clear();
         canvas.noStroke();
         canvas.fill(new Color(0, 128, 0));
         canvas.rect(this.at_x, this.at_y, this.w, this.h);
@@ -87,6 +88,6 @@ export class World {
             robot.update(canvas);
             robot.draw(canvas);
         }
-        this.time = this.time + 0.1;
+        this.time = this.time + 0.05;
     }
 }

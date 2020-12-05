@@ -27,22 +27,21 @@ export class JyroPanel extends StackedPanel {
 	world.addBox(300, 10, 310, 95, new Color(255, 255, 0));
 	world.addBox(300, 190, 310, 240, new Color(255, 128, 0));
 	// Create robot, and add to world:
-	const robot: Robot = new Robot(400, 50, 0);
+	const robot: Robot = new Robot(430, 50, 0);
 	world.addRobot(robot);
-	robot.va = -0.05;
-	robot.vx = 3.0;
+	robot.va = -0.025;
+	robot.vx = 1.5;
 	this._canvas.scale(2, 2);
 	this._canvas.font("15px Arial");
 
 	window.setInterval(() => {
-	    this._canvas.clear();
 	    world.update(this._canvas);
 	    let pic: Picture = robot.takePicture();
 	    this._canvas.picture(pic, 2 * 500, 0, 2.0);
 	    this._canvas.fill(new Color(0, 0, 0, 255));
 	    this._canvas.text(`IR[0]: ${robot.getIR(0)}`, 520, 150);
 	    this._canvas.text(`IR[1]: ${robot.getIR(1)}`, 520, 170);
-	}, 1000 / 10);
+	}, 1000 / 20); // updates per second
 
 	this._translator = translator;
 	this._trans = this._translator.load('jupyterlab');

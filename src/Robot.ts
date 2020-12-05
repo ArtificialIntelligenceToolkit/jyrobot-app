@@ -2,6 +2,12 @@ import {Color, Matrix, Point, Picture, Canvas} from "./utils";
 import {Hit} from "./Hit";
 import {World} from "./World";
 
+export class RangeSensor {
+
+    constructor() {
+    }
+}
+
 export class Robot {
     public x: number;
     public y: number;
@@ -29,7 +35,7 @@ export class Robot {
 	this.direction = 0;
 	this.state = "";
 	this.time = 0;
-	this.debug = true;
+	this.debug = false;
 	this.vx = 0.0; // velocity in x direction
 	this.vy = 0.0; // velocity in y direction
 	this.va = 0.0; // turn velocity
@@ -39,7 +45,7 @@ export class Robot {
 	this.bounding_box = new Matrix(4, 2);
 	this.color = new Color(255, 0, 0);
 	this.ir_sensors = [null, null];
-	this.max_ir = 50;
+	this.max_ir = 20; // CM
 	this.cameraShape = [256, 128];
 	this.camera = new Array(this.cameraShape[0]);
 	this.cam = false;
@@ -70,7 +76,7 @@ export class Robot {
 	// 0 is on right, front
 	// 1 is on left, front
 	if (this.ir_sensors[pos] !== null) {
-	    return this.format(this.ir_sensors[pos].distance/(this.max_ir/250.0 * this.world.scale));
+	    return this.format(this.ir_sensors[pos].distance/this.max_ir * this.world.scale);
 	} else {
 	    return 1.0;
 	}
@@ -232,15 +238,15 @@ export class Robot {
 	const tvx: number = this.vx * Math.sin(-this.direction + Math.PI/2) + this.vy * Math.cos(-this.direction + Math.PI/2);
 	const tvy: number = this.vx * Math.cos(-this.direction + Math.PI/2) - this.vy * Math.sin(-this.direction + Math.PI/2);
 	// proposed positions:
-	const px: number = this.x + tvx/250.0 * scale;
-	const py: number = this.y + tvy/250.0 * scale;
+	const px: number = this.x + tvx * scale;
+	const py: number = this.y + tvy * scale;
 	const pdirection: number = this.direction - this.va;
 	// check to see if collision
 	// bounding box:
-	const p1: number[] = this.rotateAround(px, py, 30/250.0 * scale, pdirection + Math.PI/4 + 0 * Math.PI/2);
-	const p2: number[] = this.rotateAround(px, py, 30/250.0 * scale, pdirection + Math.PI/4 + 1 * Math.PI/2);
-	const p3: number[] = this.rotateAround(px, py, 30/250.0 * scale, pdirection + Math.PI/4 + 2 * Math.PI/2);
-	const p4: number[] = this.rotateAround(px, py, 30/250.0 * scale, pdirection + Math.PI/4 + 3 * Math.PI/2);
+	const p1: number[] = this.rotateAround(px, py, 10 * scale, pdirection + Math.PI/4 + 0 * Math.PI/2);
+	const p2: number[] = this.rotateAround(px, py, 10 * scale, pdirection + Math.PI/4 + 1 * Math.PI/2);
+	const p3: number[] = this.rotateAround(px, py, 10 * scale, pdirection + Math.PI/4 + 2 * Math.PI/2);
+	const p4: number[] = this.rotateAround(px, py, 10 * scale, pdirection + Math.PI/4 + 3 * Math.PI/2);
 	this.bounding_box[0] = p1;
 	this.bounding_box[1] = p2;
 	this.bounding_box[2] = p3;
@@ -277,12 +283,12 @@ export class Robot {
 	}
 	// update sensors, camera
 	// on right:
-	let p: number[] = this.rotateAround(this.x, this.y, 25/250.0 * scale, this.direction + Math.PI/8);
+	let p: number[] = this.rotateAround(this.x, this.y, 8.3 * scale, this.direction + Math.PI/8);
 	this.ir_sensors[0] = null;
 	for (let incr = -0.5; incr <= 0.5; incr += 0.5) {
 	    let hit: Hit = this.castRay(
 		p[0], p[1], -this.direction + Math.PI/2.0  + incr,
-		this.max_ir/250.0 * scale);
+		this.max_ir * scale);
 	    if (hit) {
 		if (this.debug) {
 		    canvas.fill(new Color(0, 255, 0));
@@ -297,12 +303,12 @@ export class Robot {
 	    }
 	}
 	// on left:
-	p = this.rotateAround(this.x, this.y, 25/250.0 * scale, this.direction - Math.PI/8);
+	p = this.rotateAround(this.x, this.y, 8.3 * scale, this.direction - Math.PI/8);
 	this.ir_sensors[1] = null;
 	for (let incr = -0.5; incr <= 0.5; incr += 0.5) {
 	    let hit: Hit = this.castRay(
 		p[0], p[1], -this.direction + Math.PI/2 + incr,
-		this.max_ir/250.0 * scale);
+		this.max_ir * scale);
 	    if (hit) {
 		if (this.debug) {
 		    canvas.fill(new Color(0, 0, 255));
@@ -334,24 +340,20 @@ export class Robot {
 
     draw(canvas: Canvas) {
 	const scale: number = this.world.scale;
-	const sx: number[] = [
-	    0.05, 0.05, 0.07, 0.07, 0.09, 0.09, 0.07,
-	    0.07, 0.05, 0.05, -0.05, -0.05, -0.07,
-	    -0.08, -0.09, -0.09, -0.08, -0.07, -0.05,
-	    -0.05
+	const body: number[][] = [ // CM
+	    [4.17, 5.0], [4.17, 6.67], [5.83, 5.83], [5.83, 5.0], [7.5, 5.0], [7.5, -5.0], [5.83, -5.0],
+	    [5.83, -5.83], [4.17, -6.67], [4.17, -5.0], [-4.17, -5.0], [-4.17, -6.67], [-5.83, -5.83],
+	    [-6.67, -5.0], [-7.5, -4.17], [-7.5, 4.17], [-6.67, 5.0], [-5.83, 5.83], [-4.17, 6.67],
+	    [-4.17, 5.0]
 	];
-	const sy: number[] = [
-	    0.06, 0.08, 0.07, 0.06, 0.06, -0.06, -0.06,
-	    -0.07, -0.08, -0.06, -0.06, -0.08, -0.07,
-	    -0.06, -0.05, 0.05, 0.06, 0.07, 0.08, 0.06
-	];
+	
 	if (this.debug) {
 	    canvas.stroke(new Color(255));
 	    // bounding box:
-	    const p1: number[] = this.rotateAround(this.x, this.y, 30/250.0 * scale, this.direction + Math.PI/4.0 + 0 * Math.PI/2.0);
-	    const p2: number[] = this.rotateAround(this.x, this.y, 30/250.0 * scale, this.direction + Math.PI/4.0 + 1 * Math.PI/2.0);
-	    const p3: number[] = this.rotateAround(this.x, this.y, 30/250.0 * scale, this.direction + Math.PI/4.0 + 2 * Math.PI/2.0);
-	    const p4: number[] = this.rotateAround(this.x, this.y, 30/250.0 * scale, this.direction + Math.PI/4.0 + 3 * Math.PI/2.0);
+	    const p1: number[] = this.rotateAround(this.x, this.y, 10 * scale, this.direction + Math.PI/4.0 + 0 * Math.PI/2.0);
+	    const p2: number[] = this.rotateAround(this.x, this.y, 10 * scale, this.direction + Math.PI/4.0 + 1 * Math.PI/2.0);
+	    const p3: number[] = this.rotateAround(this.x, this.y, 10 * scale, this.direction + Math.PI/4.0 + 2 * Math.PI/2.0);
+	    const p4: number[] = this.rotateAround(this.x, this.y, 10 * scale, this.direction + Math.PI/4.0 + 3 * Math.PI/2.0);
 	    canvas.line(p1[0], p1[1], p2[0], p2[1]);
 	    canvas.line(p2[0], p2[1], p3[0], p3[1]);
 	    canvas.line(p3[0], p3[1], p4[0], p4[1]);
@@ -369,28 +371,31 @@ export class Robot {
 	    canvas.noStroke();
 	}
 	canvas.beginShape();
-	for (let i =0; i < sx.length; i++) {
-	    canvas.vertex(sx[i] * scale, sy[i] * scale);
+	for (let i =0; i < body.length; i++) {
+	    canvas.vertex(body[i][0] * scale, body[i][1] * scale);
 	}
 	canvas.endShape();
 	canvas.noStroke();
 	// Draw wheels:
 	canvas.fill(new Color(0));
-	canvas.rect(-10/250.0 * scale, -23/250.0 * scale, 19/250.0 * scale, 5/250.0 * scale);
-	canvas.rect(-10/250.0 * scale, 18/250.0 * scale, 19/250.0 * scale, 5/250.0 * scale);
+	canvas.rect(-3.33 * scale, -7.67 * scale,
+		    6.33 * scale, 1.67 * scale);
+	canvas.rect(-3.33 * scale, 6.0 * scale,
+		    6.33 * scale, 1.67 * scale);
 	// hole:
 	canvas.fill(new Color(0, 64, 0));
-	canvas.ellipse(0, 0, 5/250.0 * scale, 5/250.0 * scale);
+	canvas.ellipse(0, 0, 1.67 * scale, 1.67 * scale);
 	// fluke
 	canvas.fill(new Color(0, 64, 0));
-	canvas.rect(15/250.0 * scale, -10/250.0 * scale, 4/250.0 * scale, 19/250.0 * scale);
+	canvas.rect(5.0 * scale, -3.33 * scale,
+		    1.33 * scale, 6.33 * scale);
 	canvas.popMatrix();
 	// draw sensors
 	// right front IR
 	// position of start of sensor:
-	let p1: number[] = this.rotateAround(this.x, this.y, 25/250.0 * scale, this.direction + Math.PI/8);
+	let p1: number[] = this.rotateAround(this.x, this.y, 8.33 * scale, this.direction + Math.PI/8);
 	// angle of sensor:
-	let p2: number[] = this.rotateAround(p1[0], p1[1], this.getIR(0) * this.max_ir/250.0 * scale, this.direction);
+	let p2: number[] = this.rotateAround(p1[0], p1[1], this.getIR(0) * this.max_ir * scale, this.direction);
 	let dist: number = this.distance(p1[0], p1[1], p2[0], p2[1]);
 	if (this.getIR(0) < 1.0) {
 	    canvas.stroke(new Color(255));
@@ -402,8 +407,8 @@ export class Robot {
 		   this.direction - .5, this.direction + .5);
 
 	// left front IR
-	p1 = this.rotateAround(this.x, this.y, 25/250.0 * scale, this.direction - Math.PI/8);
-	p2 = this.rotateAround(p1[0], p1[1], this.getIR(1) * this.max_ir/250.0 * scale, this.direction);
+	p1 = this.rotateAround(this.x, this.y, 8.33 * scale, this.direction - Math.PI/8);
+	p2 = this.rotateAround(p1[0], p1[1], this.getIR(1) * this.max_ir * scale, this.direction);
 	dist = this.distance(p1[0], p1[1], p2[0], p2[1]);
 	if (this.getIR(1) < 1.0) {
 	    canvas.stroke(new Color(255));
