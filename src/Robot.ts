@@ -1,4 +1,4 @@
-import {Color, Matrix, Vector, Picture, Canvas} from "./utils";
+import {Color, Matrix, Point, Picture, Canvas} from "./utils";
 import {Hit} from "./Hit";
 import {World} from "./World";
 
@@ -195,38 +195,16 @@ export class Robot {
 
 	let count: number = 0;
 	for (let wall of this.world.walls) {
-	    // if intersection, can't move
-	    const v1: Vector = wall[0];
-	    const v2: Vector = wall[1];
-	    const v3: Vector = wall[2];
-	    const v4: Vector = wall[3];
-	    let pos: number[] = this.intersect_hit(x1, y1, x2, y2,
-						   v1.x, v1.y, v2.x, v2.y);
-	    if (pos !== null) {
-		col = this.world.colors[count];
-		dist = this.distance(pos[0], pos[1], x1, y1);
-		hits.push(new Hit(pos[0], pos[1], dist, col, x1, y1));
-	    }
-	    pos = this.intersect_hit(x1, y1, x2, y2,
-				     v2.x, v2.y, v3.x, v3.y);
-	    if (pos !== null) {
-		col = this.world.colors[count];
-		dist = this.distance(pos[0], pos[1], x1, y1);
-		hits.push(new Hit(pos[0], pos[1], dist, col, x1, y1));
-	    }
-	    pos = this.intersect_hit(x1, y1, x2, y2,
-				     v3.x, v3.y, v4.x, v4.y);
-	    if (pos !== null) {
-		col = this.world.colors[count];
-		dist = this.distance(pos[0], pos[1], x1, y1);
-		hits.push(new Hit(pos[0], pos[1], dist, col, x1, y1));
-	    }
-	    pos = this.intersect_hit(x1, y1, x2, y2,
-				     v4.x, v4.y, v1.x, v1.y);
-	    if (pos !== null) {
-		col = this.world.colors[count];
-		dist = this.distance(pos[0], pos[1], x1, y1);
-		hits.push(new Hit(pos[0], pos[1], dist, col, x1, y1));
+	    for (let i=0; i < wall.length; i += 2) {
+		const p1: Point = wall[i];
+		const p2: Point = wall[i+1];
+		let pos: number[] = this.intersect_hit(x1, y1, x2, y2,
+						       p1.x, p1.y, p2.x, p2.y);
+		if (pos !== null) {
+		    col = this.world.colors[count];
+		    dist = this.distance(pos[0], pos[1], x1, y1);
+		    hits.push(new Hit(pos[0], pos[1], dist, col, x1, y1));
+		}
 	    }
 	    count++;
 	}
@@ -268,52 +246,22 @@ export class Robot {
 	this.bounding_box[2] = p3;
 	this.bounding_box[3] = p4;
 	this.stalled = false;
+	// if intersection, can't move:
 	for (let wall of this.world.walls) {
-	    // if intersection, can't move
-	    const v1: Vector = wall[0];
-	    const v2: Vector = wall[1];
-	    const v3: Vector = wall[2];
-	    const v4: Vector = wall[3];
-	    if ( // p1 to p2
-		this.intersect(p1[0], p1[1], p2[0], p2[1],
-			       v1.x, v1.y, v2.x, v2.y) ||
-		    this.intersect(p1[0], p1[1], p2[0], p2[1],
-				   v2.x, v2.y, v3.x, v3.y) ||
-		    this.intersect(p1[0], p1[1], p2[0], p2[1],
-				   v3.x, v3.y, v4.x, v4.y) ||
-		    this.intersect(p1[0], p1[1], p2[0], p2[1],
-				   v4.x, v4.y, v1.x, v1.y) ||
-		    // p2 to p3
-		this.intersect(p2[0], p2[1], p3[0], p3[1],
-			       v1.x, v1.y, v2.x, v2.y) ||
+	    for (let i=0; i < wall.length; i += 2) {
+		const w1: Point = wall[i];
+		const w2: Point = wall[i+1];
+		if (this.intersect(p1[0], p1[1], p2[0], p2[1],
+				   w1.x, w1.y, w2.x, w2.y) ||
 		    this.intersect(p2[0], p2[1], p3[0], p3[1],
-				   v2.x, v2.y, v3.x, v3.y) ||
-		    this.intersect(p2[0], p2[1], p3[0], p3[1],
-				   v3.x, v3.y, v4.x, v4.y) ||
-		    this.intersect(p2[0], p2[1], p3[0], p3[1],
-				   v4.x, v4.y, v1.x, v1.y) ||
-		    // p3 to p4
-		this.intersect(p3[0], p3[1], p4[0], p4[1],
-			       v1.x, v1.y, v2.x, v2.y) ||
+				   w1.x, w1.y, w2.x, w2.y) ||
 		    this.intersect(p3[0], p3[1], p4[0], p4[1],
-				   v2.x, v2.y, v3.x, v3.y) ||
-		    this.intersect(p3[0], p3[1], p4[0], p4[1],
-				   v3.x, v3.y, v4.x, v4.y) ||
-		    this.intersect(p3[0], p3[1], p4[0], p4[1],
-				   v4.x, v4.y, v1.x, v1.y) ||
-		    // p4 to p1
-		this.intersect(p4[0], p4[1], p1[0], p1[1],
-			       v1.x, v1.y, v2.x, v2.y) ||
+				   w1.x, w1.y, w2.x, w2.y) ||
 		    this.intersect(p4[0], p4[1], p1[0], p1[1],
-				   v2.x, v2.y, v3.x, v3.y) ||
-		    this.intersect(p4[0], p4[1], p1[0], p1[1],
-				   v3.x, v3.y, v4.x, v4.y) ||
-		    this.intersect(p4[0], p4[1], p1[0], p1[1],
-				   v4.x, v4.y, v1.x, v1.y)) {
-		this.stalled = true;
-		break;
-		//this.x = this.x - tvx/250.0 * scale;
-		//this.y = this.y - tvy/250.0 * scale;
+				   w1.x, w1.y, w2.x, w2.y)) {
+		    this.stalled = true;
+		    break;
+		}
 	    }
 	}
 	if (! this.stalled) {

@@ -1,4 +1,4 @@
-import {Vector, Color, Canvas} from "./utils";
+import {Point, Color, Canvas} from "./utils";
 import {Robot} from "./Robot";
 
 export class World {
@@ -9,7 +9,7 @@ export class World {
     public w: number;
     public h: number;
     public robots: Robot[] = [];
-    public walls: Vector[][] = [];
+    public walls: Point[][] = [];
     public colors: Color[] = [];
 
     constructor(w: number, h: number) {
@@ -17,26 +17,17 @@ export class World {
         this.w = w;
         this.h = h;
         this.addWall(new Color(128, 0, 128),
-                     new Vector(0.0, 0.0),
-                     new Vector(this.w, 0.0),
-                     new Vector(this.w, 10.0),
-                     new Vector(0, 10.0));
+                     new Point(0.0, 0.0),
+                     new Point(this.w, 0.0));
         this.addWall(new Color(128, 0, 128),
-                     new Vector(0, 0),
-                     new Vector(0, this.h),
-                     new Vector(10, this.h),
-                     new Vector(10, 0));
+                     new Point(0, 0),
+                     new Point(0, this.h));
         this.addWall(new Color(128, 0, 128),
-                     new Vector(0.0, this.h - 10.0),
-                     new Vector(0.0, this.h),
-                     new Vector(this.w, this.h),
-                     new Vector(this.w, this.h - 10.0)
-                     );
+                     new Point(0.0, this.h),
+                     new Point(this.w, this.h));
         this.addWall(new Color(128, 0, 128),
-                     new Vector(this.w - 10.0, 0.0),
-                     new Vector(this.w, 0.0),
-                     new Vector(this.w, this.h),
-                     new Vector(this.w - 10.0, this.h));
+                     new Point(this.w, 0.0),
+                     new Point(this.w, this.h));
     }
 
     addBox(x1: number, y1: number, x2: number, y2: number, color: Color) {
@@ -45,11 +36,13 @@ export class World {
 	y1 = y1/this.h * this.h;
 	x2 = x2/this.w * this.w;
 	y2 = y2/this.h * this.h;
-	this.addWall(color,
-                     new Vector(x1, y1),
-                     new Vector(x2, y1),
-                     new Vector(x2, y2),
-                     new Vector(x1, y2));
+
+	const p1 = new Point(x1, y1);
+        const p2 = new Point(x2, y1);
+        const p3 = new Point(x2, y2);
+        const p4 = new Point(x1, y2);
+
+	this.addWall(color, p1, p2, p2, p3, p3, p4, p4, p1);
     }
 
     setScale(s: number) {
@@ -57,13 +50,12 @@ export class World {
 	this.scale = s * 250;
     }
 
-    addWall(c: Color, v1: Vector, v2: Vector, v3: Vector, v4: Vector) {
-        const wall: Vector[] = [];
+    addWall(c: Color, ...points: Point[]) {
+        const wall: Point[] = [];
         this.colors.push(c);
-        wall.push(v1);
-        wall.push(v2);
-        wall.push(v3);
-        wall.push(v4);
+	for (let point of points) {
+            wall.push(point);
+	}
         this.walls.push(wall);
     }
 

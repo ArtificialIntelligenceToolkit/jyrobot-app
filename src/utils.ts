@@ -202,7 +202,7 @@ export class Color {
     }
 }
 
-export class Vector {
+export class Point {
     public x: number;
     public y: number;
 

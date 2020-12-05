@@ -4,7 +4,7 @@ import {
 } from '@jupyterlab/translation';
 
 import { StackedPanel } from '@lumino/widgets';
-import {Canvas, Color, Vector} from "./utils";
+import {Canvas, Color} from "./utils";
 
 import {World} from "./World";
 import {Robot} from "./Robot";
