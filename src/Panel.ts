@@ -38,9 +38,18 @@ export class JyroPanel extends StackedPanel {
 	    let pic: Picture = robot.takePicture();
 	    this._canvas.picture(pic, 2 * 500 + 3, 0, 2.0); // x, y, scale
 	    this._canvas.fill(new Color(0, 0, 0, 255));
-	    this._canvas.text(`IR[0]: ${this.format(robot.getIR(0))}`, 520, 150);
-	    this._canvas.text(`IR[1]: ${this.format(robot.getIR(1))}`, 520, 170);
+	    this._canvas.text(`IR[0]: ${this.format(robot.range_sensors[0].getReading())}`, 520, 150);
+	    this._canvas.text(`IR[1]: ${this.format(robot.range_sensors[1].getReading())}`, 520, 170);
 	    this._canvas.text(`Time: ${this.format(world.time, 1)}`, 520, 190);
+	    if (robot.stalled) {
+		robot.va = 0;
+		robot.vx = 0;
+	    } else {
+		robot.va += Math.random() * 0.025 - 0.025/2;
+		robot.va = Math.min(Math.max(robot.va, -0.1), 0.1)
+		robot.vx += Math.random() * 0.25 - 0.25/2;
+		robot.vx = Math.min(Math.max(robot.vx, -1.5), 1.5)
+	    }
 	}, 1000 / 20); // updates per second
 
 	this._translator = translator;

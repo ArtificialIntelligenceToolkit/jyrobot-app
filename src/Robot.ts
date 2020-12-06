@@ -14,11 +14,14 @@ export class RangeSensor {
     public distance: number;
     public direction: number;
     public position: number;
+    public width: number; // radians
     public p1: number[];
 
-    constructor(position: number, direction: number) {
+    constructor(position: number, direction: number, max: number, width: number) {
 	this.position = position;
 	this.direction = direction;
+	this.max = max;
+	this.width = width;
 	this.distance = this.reading * this.max;
     }
 
@@ -56,12 +59,14 @@ export class Robot {
     public time: number;
     public bounding_box: Matrix;
     public color: Color;
-    public ir_sensors: RangeSensor[];
+    public range_sensors: RangeSensor[];
     public camera: Hit[];
     public cam: boolean;
     public cameraShape: number[];
+    public trace: Point[];
 
     initialize() {
+	this.trace = [];
 	this.x = 0;
 	this.y = 0;
 	this.direction = 0;
@@ -76,7 +81,8 @@ export class Robot {
 	this.time = 0;
 	this.bounding_box = new Matrix(4, 2);
 	this.color = new Color(255, 0, 0);
-	this.ir_sensors = [new RangeSensor(8.3, Math.PI/8), new RangeSensor(8.3, -Math.PI/8)];
+	this.range_sensors = [new RangeSensor(8.3, Math.PI/8, 20, 1.0),
+			      new RangeSensor(8.3, -Math.PI/8, 20, 1.0)];
 	this.cameraShape = [256, 128];
 	this.camera = new Array(this.cameraShape[0]);
 	this.cam = false;
@@ -97,12 +103,6 @@ export class Robot {
 
     backward(vx: number) {
 	this.vx = -vx;
-    }
-
-    getIR(pos: number): number {
-	// 0 is on right, front
-	// 1 is on left, front
-	return this.ir_sensors[pos].getReading();
     }
 
     takePicture(): Picture {
@@ -252,6 +252,16 @@ export class Robot {
     }
 
     update(canvas: Canvas) {
+	this.trace.push(new Point(this.x, this.y));
+	if (this.trace.length > 1000) {
+	    this.trace.shift();
+	}
+	canvas.strokeStyle(new Color(255), 1);
+	canvas.beginShape();
+	for (let point of this.trace) {
+	    canvas.vertex(point.x, point.y);
+	}
+	canvas.stroke();
 	//this.direction += PI/180;
 	const tvx: number = this.vx * Math.sin(-this.direction + Math.PI/2) + this.vy * Math.cos(-this.direction + Math.PI/2);
 	const tvy: number = this.vx * Math.cos(-this.direction + Math.PI/2) - this.vy * Math.sin(-this.direction + Math.PI/2);
@@ -301,23 +311,39 @@ export class Robot {
 	}
 	// update sensors, camera
 	// on right:
-	for (let index=0; index < this.ir_sensors.length; index++) {
-	    let ir_sensor = this.ir_sensors[index];
-	    let p: number[] = this.rotateAround(this.x, this.y, ir_sensor.position, this.direction + ir_sensor.direction);
-	    ir_sensor.setReading(1.0);
+	for (let index=0; index < this.range_sensors.length; index++) {
+	    let range_sensor = this.range_sensors[index];
+	    let p: number[] = this.rotateAround(this.x, this.y, range_sensor.position, this.direction + range_sensor.direction);
+	    range_sensor.setReading(1.0);
 	    // FIXME: width in radians
-	    for (let incr = -0.5; incr <= 0.5; incr += 0.5) {
+	    if (range_sensor.width !== 0) {
+		for (let incr = -range_sensor.width/2; incr <= range_sensor.width/2; incr += range_sensor.width/2) {
+		    let hit: Hit = this.castRay(
+			p[0], p[1], -this.direction + Math.PI/2.0  + incr,
+			range_sensor.max);
+		    if (hit) {
+			if (this.debug) {
+			    canvas.fill(new Color(0, 255, 0));
+			    canvas.ellipse(p[0], p[1], 5, 5);
+			    canvas.ellipse(hit.x, hit.y, 5, 5);
+			}
+			if (hit.distance < range_sensor.getDistance()) {
+			    range_sensor.setDistance(hit.distance);
+			}
+		    }
+		}
+	    } else {
 		let hit: Hit = this.castRay(
-		    p[0], p[1], -this.direction + Math.PI/2.0  + incr,
-		    ir_sensor.max);
+		    p[0], p[1], -this.direction + Math.PI/2.0,
+		    range_sensor.max);
 		if (hit) {
 		    if (this.debug) {
 			canvas.fill(new Color(0, 255, 0));
 			canvas.ellipse(p[0], p[1], 5, 5);
 			canvas.ellipse(hit.x, hit.y, 5, 5);
 		    }
-		    if (hit.distance < ir_sensor.getDistance()) {
-			ir_sensor.setDistance(hit.distance);
+		    if (hit.distance < range_sensor.getDistance()) {
+			range_sensor.setDistance(hit.distance);
 		    }
 		}
 	    }
@@ -377,10 +403,8 @@ export class Robot {
 	canvas.noStroke();
 	// Draw wheels:
 	canvas.fill(new Color(0));
-	canvas.rect(-3.33, -7.67,
-		    6.33, 1.67);
-	canvas.rect(-3.33, 6.0,
-		    6.33, 1.67);
+	canvas.rect(-3.33, -7.67, 6.33, 1.67);
+	canvas.rect(-3.33, 6.0, 6.33, 1.67);
 	// hole:
 	canvas.fill(new Color(0, 64, 0));
 	canvas.strokeStyle(null, 0);
@@ -391,17 +415,18 @@ export class Robot {
 	canvas.rect(5.0, -3.33, 1.33, 6.33);
 	canvas.popMatrix();
 
-	for (let index=0; index < this.ir_sensors.length; index++) {
-	    if (this.getIR(index) < 1.0) {
+	for (let index=0; index < this.range_sensors.length; index++) {
+	    if (this.range_sensors[index].getReading() < 1.0) {
 		canvas.strokeStyle(new Color(255), 1);
 	    } else {
 		canvas.strokeStyle(new Color(0), 1);
 	    }
 	    canvas.fill(new Color(128, 0, 128, 64));
-	    let p1 = this.rotateAround(this.x, this.y, this.ir_sensors[index].position, this.direction + this.ir_sensors[index].direction);
-	    let dist = this.ir_sensors[index].getDistance();
+	    let p1 = this.rotateAround(this.x, this.y, this.range_sensors[index].position, this.direction + this.range_sensors[index].direction);
+	    let dist = this.range_sensors[index].getDistance();
 	    canvas.arc(p1[0], p1[1], dist, dist,
-		       this.direction - .5, this.direction + .5); // FIXME: width in radians
+		       this.direction - this.range_sensors[index].width/2,
+		       this.direction + this.range_sensors[index].width/2);
 	}
     }
 }
