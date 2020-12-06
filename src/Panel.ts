@@ -19,7 +19,7 @@ export class JyroPanel extends StackedPanel {
 
     constructor(translator: ITranslator) {
 	super();
-	this._canvas = new Canvas(2000, 500);
+	this._canvas = new Canvas(2000, 500, 2.0); // width, height, scale
 
 	const world: World = new World(500, 250);
 	world.addBox(100, 0, 110, 110, new Color(0));
@@ -31,7 +31,6 @@ export class JyroPanel extends StackedPanel {
 	world.addRobot(robot);
 	robot.va = -0.025;
 	robot.vx = 1.5;
-	this._canvas.scale(2, 2);
 	this._canvas.font("15px Arial");
 
 	window.setInterval(() => {

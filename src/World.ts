@@ -3,7 +3,6 @@ import {Robot} from "./Robot";
 
 export class World {
     public time: number = 0;
-    public scale: number = 1.0;
     public at_x: number = 0;
     public at_y: number = 0;
     public w: number;
@@ -31,23 +30,11 @@ export class World {
     }
 
     addBox(x1: number, y1: number, x2: number, y2: number, color: Color) {
-	// add to world, scaled
-	x1 = x1/this.w * this.w;
-	y1 = y1/this.h * this.h;
-	x2 = x2/this.w * this.w;
-	y2 = y2/this.h * this.h;
-
 	const p1 = new Point(x1, y1);
         const p2 = new Point(x2, y1);
         const p3 = new Point(x2, y2);
         const p4 = new Point(x1, y2);
-
 	this.addWall(color, p1, p2, p2, p3, p3, p4, p4, p1);
-    }
-
-    setScale(s: number) {
-	// scale the world... > 1 make it bigger
-	this.scale = s;
     }
 
     addWall(c: Color, ...points: Point[]) {
@@ -60,9 +47,6 @@ export class World {
     }
 
     addRobot(robot: Robot) {
-      // scale the robot's position to this world:
-      robot.x = robot.x/this.w * this.w;
-      robot.y = robot.y/this.h * this.h;
       this.robots.push(robot);
       robot.world = this;
     }

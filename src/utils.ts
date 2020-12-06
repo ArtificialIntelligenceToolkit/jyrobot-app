@@ -12,9 +12,11 @@ export class Canvas extends Widget {
     public canvas: HTMLCanvasElement;
     public canvasGC: CanvasRenderingContext2D;
     public shape: boolean;
+    private _scale: number;
 
-    constructor(width: number, height: number) {
+    constructor(width: number, height: number, scale: number) {
 	super();
+	this._scale = scale;
 	this.width = width;
 	this.height = height;
 	this.canvas = document.createElement('canvas');
@@ -24,6 +26,7 @@ export class Canvas extends Widget {
 	this.gc = new GraphicsContext(this.canvasGC);
 	this.node.appendChild(this.canvas);
 	this.shape = false; // in the middle of a shape?
+	this.scale(this._scale, this._scale);
     }
 
     clear() {
