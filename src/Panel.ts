@@ -36,11 +36,11 @@ export class JyroPanel extends StackedPanel {
 	window.setInterval(() => {
 	    world.update(this._canvas);
 	    let pic: Picture = robot.takePicture();
-	    this._canvas.picture(pic, 2 * 500, 0, 2.0);
+	    this._canvas.picture(pic, 2 * 500 + 3, 0, 2.0); // x, y, scale
 	    this._canvas.fill(new Color(0, 0, 0, 255));
-	    this._canvas.text(`IR[0]: ${robot.getIR(0)}`, 520, 150);
-	    this._canvas.text(`IR[1]: ${robot.getIR(1)}`, 520, 170);
-	    this._canvas.text(`Time: ${world.time}`, 520, 190);
+	    this._canvas.text(`IR[0]: ${this.format(robot.getIR(0))}`, 520, 150);
+	    this._canvas.text(`IR[1]: ${this.format(robot.getIR(1))}`, 520, 170);
+	    this._canvas.text(`Time: ${this.format(world.time, 1)}`, 520, 190);
 	}, 1000 / 20); // updates per second
 
 	this._translator = translator;
@@ -52,6 +52,10 @@ export class JyroPanel extends StackedPanel {
 	this.title.closable = true;
 
 	this.addWidget(this._canvas);
+    }
+
+    format(v: number, decimals: number = 2): number {
+	return parseFloat(v.toFixed(decimals));
     }
 
     getCanvas(): Canvas {

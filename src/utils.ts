@@ -41,12 +41,21 @@ export class Canvas extends Widget {
 	this.gc.fillText(t, x, y);
     }
 
-    stroke(color: Color) {
+    lineWidth(width: number) {
+	this.gc.lineWidth = width;
+    }
+
+    strokeStyle(color: Color, width: number) {
 	if (color) {
 	    this.gc.strokeStyle = color.toString();
 	} else {
 	    this.gc.strokeStyle = "";
 	}
+	this.gc.lineWidth = width;
+    }
+
+    stroke() {
+	this.gc.stroke();
     }
 
     noStroke() {
@@ -61,7 +70,12 @@ export class Canvas extends Widget {
 	}
     }
 
+    noFill() {
+	this.gc.fillStyle = "";
+    }
+
     line(x1: number, y1: number, x2: number, y2: number) {
+	this.beginShape();
 	this.gc.moveTo(x1, y1);
 	this.gc.lineTo(x2, y2);
 	this.gc.stroke();
@@ -114,8 +128,6 @@ export class Canvas extends Widget {
 	this.gc.beginPath();
 	this.gc.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2);
 	this.gc.fill();
-	this.gc.stroke();
-	this.gc.closePath();
     }
 
     picture(pic: Picture, x: number, y: number, scale: number=1.0) {
@@ -145,18 +157,18 @@ export class Canvas extends Widget {
 
     arc(x: number, y: number, width: number, height: number, startAngle: number, endAngle: number) {
 	// Draw the pie:
+	this.gc.strokeStyle = "";
 	this.gc.beginPath();
 	this.gc.moveTo(x, y);
 	this.gc.arc(x, y, width, startAngle, endAngle);
 	this.gc.lineTo(x, y);
 	this.gc.fill();
-	this.gc.closePath();
 
 	// Draw the arc:
+	this.gc.strokeStyle = "";
 	this.gc.beginPath();
 	this.gc.arc(x, y, width, startAngle, endAngle);
 	this.gc.stroke();
-	this.gc.closePath();
     }
 }
 

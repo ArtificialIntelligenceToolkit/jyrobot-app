@@ -20,6 +20,7 @@ export class World {
     public robots: Robot[] = [];
     public walls: Wall[] = [];
     public boundary_wall_color: Color;
+    public boundary_wall_width: number = 1;
     public ground_color: Color;
 
     constructor(w: number, h: number) {
@@ -38,6 +39,10 @@ export class World {
         this.addWall(this.boundary_wall_color, new Line(p2, p3));
         this.addWall(this.boundary_wall_color, new Line(p3, p4));
         this.addWall(this.boundary_wall_color, new Line(p4, p1));
+    }
+
+    format(v: number): number {
+	return parseFloat(v.toFixed(2));
     }
 
     addBox(color: Color, x1: number, y1: number, x2: number, y2: number) {
@@ -67,17 +72,32 @@ export class World {
         canvas.noStroke();
         canvas.fill(this.ground_color);
         canvas.rect(this.at_x, this.at_y, this.w, this.h);
+	// Draw walls:
         for (let wall of this.walls) {
             const c: Color = wall.color;
-            canvas.fill(c);
-            canvas.stroke(c);
-	    canvas.beginShape();
-	    for (let line of wall.lines) {
-		canvas.vertex(line.p1.x, line.p1.y);
-		canvas.vertex(line.p2.x, line.p2.y);
+	    if (wall.lines.length >= 1) {
+		canvas.noStroke();
+		canvas.fill(c);
+		canvas.beginShape();
+		for (let line of wall.lines) {
+		    canvas.vertex(line.p1.x, line.p1.y);
+		    canvas.vertex(line.p2.x, line.p2.y);
+		}
+		canvas.endShape();
 	    }
-            canvas.endShape();
         }
+	// Draw borders:
+        for (let wall of this.walls) {
+            const c: Color = wall.color;
+	    if (wall.lines.length === 1) {
+		canvas.strokeStyle(c, 3);
+		canvas.line(wall.lines[0].p1.x, wall.lines[0].p1.y,
+			    wall.lines[0].p2.x, wall.lines[0].p2.y);
+		canvas.lineWidth(1);
+		canvas.noStroke();
+	    }
+        }
+	// Draw robots:
         for (let robot of this.robots) {
             robot.update(canvas);
             robot.draw(canvas);

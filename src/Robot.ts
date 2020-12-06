@@ -99,14 +99,10 @@ export class Robot {
 	this.vx = -vx;
     }
 
-    format(v: number): number {
-	return parseFloat(v.toFixed(2));
-    }
-
     getIR(pos: number): number {
 	// 0 is on right, front
 	// 1 is on left, front
-	return this.format(this.ir_sensors[pos].getReading());
+	return this.ir_sensors[pos].getReading();
     }
 
     takePicture(): Picture {
@@ -351,7 +347,7 @@ export class Robot {
 	];
 
 	if (this.debug) {
-	    canvas.stroke(new Color(255));
+	    canvas.strokeStyle(new Color(255), 1);
 	    // bounding box:
 	    const p1: number[] = this.rotateAround(this.x, this.y, 10, this.direction + Math.PI/4.0 + 0 * Math.PI/2.0);
 	    const p2: number[] = this.rotateAround(this.x, this.y, 10, this.direction + Math.PI/4.0 + 1 * Math.PI/2.0);
@@ -368,7 +364,7 @@ export class Robot {
 	// body:
 	if (this.stalled) {
 	    canvas.fill(new Color(128, 128, 128));
-	    canvas.stroke(new Color(255));
+	    canvas.strokeStyle(new Color(255), 1);
 	} else {
 	    canvas.fill(this.color);
 	    canvas.noStroke();
@@ -387,17 +383,19 @@ export class Robot {
 		    6.33, 1.67);
 	// hole:
 	canvas.fill(new Color(0, 64, 0));
+	canvas.strokeStyle(null, 0);
 	canvas.ellipse(0, 0, 1.67, 1.67);
 	// fluke
 	canvas.fill(new Color(0, 64, 0));
+	canvas.strokeStyle(null, 0);
 	canvas.rect(5.0, -3.33, 1.33, 6.33);
 	canvas.popMatrix();
 
 	for (let index=0; index < this.ir_sensors.length; index++) {
 	    if (this.getIR(index) < 1.0) {
-		canvas.stroke(new Color(255));
+		canvas.strokeStyle(new Color(255), 1);
 	    } else {
-		canvas.stroke(new Color(0));
+		canvas.strokeStyle(new Color(0), 1);
 	    }
 	    canvas.fill(new Color(128, 0, 128, 64));
 	    let p1 = this.rotateAround(this.x, this.y, this.ir_sensors[index].position, this.direction + this.ir_sensors[index].direction);
