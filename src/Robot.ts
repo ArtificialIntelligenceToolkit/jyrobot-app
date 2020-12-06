@@ -223,23 +223,19 @@ export class Robot {
 	const hits: Hit[] = [];
 	const x2: number = Math.sin(a) * maxRange + x1;
 	const y2: number = Math.cos(a) * maxRange + y1;
-	let col: Color = null;
 	let dist: number = null;
 
-	let count: number = 0;
 	for (let wall of this.world.walls) {
-	    for (let i=0; i < wall.length; i += 2) {
-		const p1: Point = wall[i];
-		const p2: Point = wall[i+1];
+	    for (let line of wall.lines) {
+		const p1: Point = line.p1;
+		const p2: Point = line.p2;
 		let pos: number[] = this.intersect_hit(x1, y1, x2, y2,
 						       p1.x, p1.y, p2.x, p2.y);
 		if (pos !== null) {
-		    col = this.world.colors[count];
 		    dist = this.distance(pos[0], pos[1], x1, y1);
-		    hits.push(new Hit(pos[0], pos[1], dist, col, x1, y1));
+		    hits.push(new Hit(pos[0], pos[1], dist, wall.color, x1, y1));
 		}
 	    }
-	    count++;
 	}
 	if (hits.length === 0) {
 	    return null;
@@ -280,9 +276,9 @@ export class Robot {
 	this.stalled = false;
 	// if intersection, can't move:
 	for (let wall of this.world.walls) {
-	    for (let i=0; i < wall.length; i += 2) {
-		const w1: Point = wall[i];
-		const w2: Point = wall[i+1];
+	    for (let line of wall.lines) {
+		const w1: Point = line.p1;
+		const w2: Point = line.p2;
 		if (this.intersect(p1[0], p1[1], p2[0], p2[1],
 				   w1.x, w1.y, w2.x, w2.y) ||
 		    this.intersect(p2[0], p2[1], p3[0], p3[1],
