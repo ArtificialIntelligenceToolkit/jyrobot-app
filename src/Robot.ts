@@ -3,8 +3,15 @@ import {Hit} from "./Hit";
 import {World} from "./World";
 
 export class RangeSensor {
+    public max: number = 20; // CM
+    public distance: number = 1.0;
+    public p1: number[];
 
     constructor() {
+    }
+
+    getDistance() {
+	return this.distance;
     }
 }
 
@@ -23,8 +30,7 @@ export class Robot {
     public time: number;
     public bounding_box: Matrix;
     public color: Color;
-    public ir_sensors: Hit[];
-    public max_ir: number;
+    public ir_sensors: RangeSensor[];
     public camera: Hit[];
     public cam: boolean;
     public cameraShape: number[];
@@ -44,8 +50,7 @@ export class Robot {
 	this.time = 0;
 	this.bounding_box = new Matrix(4, 2);
 	this.color = new Color(255, 0, 0);
-	this.ir_sensors = [null, null];
-	this.max_ir = 20; // CM
+	this.ir_sensors = [new RangeSensor(), new RangeSensor()];
 	this.cameraShape = [256, 128];
 	this.camera = new Array(this.cameraShape[0]);
 	this.cam = false;
@@ -75,11 +80,7 @@ export class Robot {
     getIR(pos: number): number {
 	// 0 is on right, front
 	// 1 is on left, front
-	if (this.ir_sensors[pos] !== null) {
-	    return this.format(this.ir_sensors[pos].distance/this.max_ir * this.world.scale);
-	} else {
-	    return 1.0;
-	}
+	return this.format(this.ir_sensors[pos].getDistance());
     }
 
     takePicture(): Picture {
@@ -284,41 +285,37 @@ export class Robot {
 	// update sensors, camera
 	// on right:
 	let p: number[] = this.rotateAround(this.x, this.y, 8.3 * scale, this.direction + Math.PI/8);
-	this.ir_sensors[0] = null;
+	this.ir_sensors[0].distance = 1.0;
 	for (let incr = -0.5; incr <= 0.5; incr += 0.5) {
 	    let hit: Hit = this.castRay(
 		p[0], p[1], -this.direction + Math.PI/2.0  + incr,
-		this.max_ir * scale);
+		this.ir_sensors[0].max * scale);
 	    if (hit) {
 		if (this.debug) {
 		    canvas.fill(new Color(0, 255, 0));
 		    canvas.ellipse(p[0], p[1], 5, 5);
 		    canvas.ellipse(hit.x, hit.y, 5, 5);
 		}
-		if (this.ir_sensors[0] === null) {
-		    this.ir_sensors[0] = hit;
-		} else if (hit.distance < this.ir_sensors[0].distance) {
-		    this.ir_sensors[0] = hit;
+		if (hit.distance/this.ir_sensors[0].max < this.ir_sensors[0].distance) {
+		    this.ir_sensors[0].distance = hit.distance/this.ir_sensors[0].max;
 		}
 	    }
 	}
 	// on left:
 	p = this.rotateAround(this.x, this.y, 8.3 * scale, this.direction - Math.PI/8);
-	this.ir_sensors[1] = null;
+	this.ir_sensors[1].distance = 1.0;
 	for (let incr = -0.5; incr <= 0.5; incr += 0.5) {
 	    let hit: Hit = this.castRay(
 		p[0], p[1], -this.direction + Math.PI/2 + incr,
-		this.max_ir * scale);
+		this.ir_sensors[1].max * scale);
 	    if (hit) {
 		if (this.debug) {
 		    canvas.fill(new Color(0, 0, 255));
 		    canvas.ellipse(p[0], p[1], 5, 5);
 		    canvas.ellipse(hit.x, hit.y, 5, 5);
 		}
-		if (this.ir_sensors[1] === null) {
-		    this.ir_sensors[1] = hit;
-		} else if (hit.distance < this.ir_sensors[1].distance) {
-		    this.ir_sensors[1] = hit;
+		if (hit.distance/this.ir_sensors[1].max < this.ir_sensors[1].distance) {
+		    this.ir_sensors[1].distance = hit.distance/this.ir_sensors[1].max;
 		}
 	    }
 	}
@@ -390,32 +387,26 @@ export class Robot {
 	canvas.rect(5.0 * scale, -3.33 * scale,
 		    1.33 * scale, 6.33 * scale);
 	canvas.popMatrix();
-	// draw sensors
-	// right front IR
-	// position of start of sensor:
-	let p1: number[] = this.rotateAround(this.x, this.y, 8.33 * scale, this.direction + Math.PI/8);
-	// angle of sensor:
-	let p2: number[] = this.rotateAround(p1[0], p1[1], this.getIR(0) * this.max_ir * scale, this.direction);
-	let dist: number = this.distance(p1[0], p1[1], p2[0], p2[1]);
 	if (this.getIR(0) < 1.0) {
 	    canvas.stroke(new Color(255));
 	} else {
             canvas.stroke(new Color(0));
 	}
 	canvas.fill(new Color(128, 0, 128, 64));
+	let p1 = this.rotateAround(this.x, this.y, 8.33 * scale, this.direction + Math.PI/8);
+	let dist = this.ir_sensors[0].distance * this.ir_sensors[0].max * scale;
 	canvas.arc(p1[0], p1[1], dist, dist,
 		   this.direction - .5, this.direction + .5);
 
 	// left front IR
-	p1 = this.rotateAround(this.x, this.y, 8.33 * scale, this.direction - Math.PI/8);
-	p2 = this.rotateAround(p1[0], p1[1], this.getIR(1) * this.max_ir * scale, this.direction);
-	dist = this.distance(p1[0], p1[1], p2[0], p2[1]);
 	if (this.getIR(1) < 1.0) {
 	    canvas.stroke(new Color(255));
 	} else {
             canvas.stroke(new Color(0));
 	}
 	canvas.fill(new Color(128, 0, 128, 64));
+	p1 = this.rotateAround(this.x, this.y, 8.33 * scale, this.direction - Math.PI/8);
+	dist = this.ir_sensors[1].distance * this.ir_sensors[1].max * scale;
 	canvas.arc(p1[0], p1[1], dist, dist,
 		   this.direction - .5, this.direction + .5);
     }
