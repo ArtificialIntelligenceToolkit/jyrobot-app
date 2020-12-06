@@ -24,8 +24,8 @@ export class JyroPanel extends StackedPanel {
 	const world: World = new World(500, 250);
 	world.addBox(100, 0, 110, 110, new Color(0));
 	world.addBox(200, 95, 210, 170, new Color(255, 0, 255));
-	world.addBox(300, 10, 310, 95, new Color(255, 255, 0));
-	world.addBox(300, 190, 310, 240, new Color(255, 128, 0));
+	world.addBox(300, 0, 310, 95, new Color(255, 255, 0));
+	world.addBox(300, 190, 310, 250, new Color(255, 128, 0));
 	// Create robot, and add to world:
 	const robot: Robot = new Robot(430, 50, 0);
 	world.addRobot(robot);
