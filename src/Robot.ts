@@ -64,9 +64,13 @@ export class Robot {
     public cam: boolean;
     public cameraShape: number[];
     public trace: Point[];
+    public doTrace: boolean;
+    public max_trace_length: number;
 
     initialize() {
+	this.doTrace = true;
 	this.trace = [];
+	this.max_trace_length = 1000;
 	this.x = 0;
 	this.y = 0;
 	this.direction = 0;
@@ -80,21 +84,24 @@ export class Robot {
 	this.state = "";
 	this.time = 0;
 	this.bounding_box = new Matrix(4, 2);
-	this.color = new Color(255, 0, 0);
-	this.range_sensors = [new RangeSensor(8.3, Math.PI/8, 20, 1.0),
-			      new RangeSensor(8.3, -Math.PI/8, 20, 1.0)];
+	this.range_sensors = [
+	    new RangeSensor(8.3, 0, 100, 0.05),
+	    new RangeSensor(8.3, Math.PI/8, 20, 1.0),
+	    new RangeSensor(8.3, -Math.PI/8, 20, 1.0)
+	];
 	this.cameraShape = [256, 128];
 	this.camera = new Array(this.cameraShape[0]);
 	this.cam = false;
     }
 
-    constructor(x: number, y: number, direction: number) {
+    constructor(x: number, y: number, direction: number, color: Color) {
 	this.initialize();
 	this.x = x;
 	this.y = y;
 	this.direction = direction;
 	this.state = "";
 	this.time = 0;
+	this.color = color;
     }
 
     forward(vx: number) {
@@ -252,16 +259,18 @@ export class Robot {
     }
 
     update(canvas: Canvas) {
-	this.trace.push(new Point(this.x, this.y));
-	if (this.trace.length > 1000) {
-	    this.trace.shift();
+	if (this.doTrace) {
+	    this.trace.push(new Point(this.x, this.y));
+	    if (this.trace.length > this.max_trace_length) {
+		this.trace.shift();
+	    }
+	    canvas.strokeStyle(new Color(200, 200, 200), 1);
+	    canvas.beginShape();
+	    for (let point of this.trace) {
+		canvas.vertex(point.x, point.y);
+	    }
+	    canvas.stroke();
 	}
-	canvas.strokeStyle(new Color(255), 1);
-	canvas.beginShape();
-	for (let point of this.trace) {
-	    canvas.vertex(point.x, point.y);
-	}
-	canvas.stroke();
 	//this.direction += PI/180;
 	const tvx: number = this.vx * Math.sin(-this.direction + Math.PI/2) + this.vy * Math.cos(-this.direction + Math.PI/2);
 	const tvy: number = this.vx * Math.cos(-this.direction + Math.PI/2) - this.vy * Math.sin(-this.direction + Math.PI/2);
@@ -417,16 +426,21 @@ export class Robot {
 
 	for (let index=0; index < this.range_sensors.length; index++) {
 	    if (this.range_sensors[index].getReading() < 1.0) {
-		canvas.strokeStyle(new Color(255), 1);
+		canvas.strokeStyle(this.color, 1);
 	    } else {
 		canvas.strokeStyle(new Color(0), 1);
 	    }
 	    canvas.fill(new Color(128, 0, 128, 64));
 	    let p1 = this.rotateAround(this.x, this.y, this.range_sensors[index].position, this.direction + this.range_sensors[index].direction);
 	    let dist = this.range_sensors[index].getDistance();
-	    canvas.arc(p1[0], p1[1], dist, dist,
-		       this.direction - this.range_sensors[index].width/2,
-		       this.direction + this.range_sensors[index].width/2);
+	    if (this.range_sensors[index].width > 0) {
+		canvas.arc(p1[0], p1[1], dist, dist,
+			   this.direction - this.range_sensors[index].width/2,
+			   this.direction + this.range_sensors[index].width/2);
+	    } else {
+		const end: number[] = this.rotateAround(p1[0], p1[1], dist, this.direction + this.range_sensors[index].direction);
+		canvas.line(p1[0], p1[1], end[0], end[1]);
+	    }
 	}
     }
 }

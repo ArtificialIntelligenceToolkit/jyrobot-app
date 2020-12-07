@@ -27,10 +27,14 @@ export class JyroPanel extends StackedPanel {
 	world.addBox(new Color(255, 255, 0), 300, 0, 310, 95);
 	world.addBox(new Color(255, 128, 0), 300, 190, 310, 250);
 	// Create robot, and add to world:
-	const robot: Robot = new Robot(430, 50, 0);
+	let robot: Robot = new Robot(430, 50, 0, new Color(255, 0, 0));
 	world.addRobot(robot);
-	robot.va = -0.025;
-	robot.vx = 1.5;
+	robot = new Robot(30, 50, 0, new Color(0, 0, 255))
+	world.addRobot(robot);
+	for (let index = 0; index< world.robots.length; index++) {
+	    world.robots[index].va = -0.025;
+	    world.robots[index].vx = 1.5;
+	}
 	this._canvas.font("15px Arial");
 
 	window.setInterval(() => {
@@ -38,17 +42,22 @@ export class JyroPanel extends StackedPanel {
 	    let pic: Picture = robot.takePicture();
 	    this._canvas.picture(pic, 2 * 500 + 3, 0, 2.0); // x, y, scale
 	    this._canvas.fill(new Color(0, 0, 0, 255));
-	    this._canvas.text(`IR[0]: ${this.format(robot.range_sensors[0].getReading())}`, 520, 150);
-	    this._canvas.text(`IR[1]: ${this.format(robot.range_sensors[1].getReading())}`, 520, 170);
-	    this._canvas.text(`Time: ${this.format(world.time, 1)}`, 520, 190);
-	    if (robot.stalled) {
-		robot.va = 0;
-		robot.vx = 0;
-	    } else {
-		robot.va += Math.random() * 0.025 - 0.025/2;
-		robot.va = Math.min(Math.max(robot.va, -0.1), 0.1)
-		robot.vx += Math.random() * 0.25 - 0.25/2;
-		robot.vx = Math.min(Math.max(robot.vx, -1.5), 1.5)
+	    let line: number = 150;
+	    for (let index=0; index < robot.range_sensors.length; index++) {
+		this._canvas.text(`IR[0]: ${this.format(robot.range_sensors[index].getReading())}`, 520, line+=20);
+	    }
+	    this._canvas.text(`Time: ${this.format(world.time, 1)}`, 520, line+=20);
+	    for (let index = 0; index< world.robots.length; index++) {
+		robot = world.robots[index];
+		if (robot.stalled) {
+		    robot.va = 0;
+		    robot.vx = 0;
+		} else {
+		    robot.va += Math.random() * 0.025 - 0.025/2;
+		    robot.va = Math.min(Math.max(robot.va, -0.1), 0.1)
+		    robot.vx += Math.random() * 0.25 - 0.25/2;
+		    robot.vx = Math.min(Math.max(robot.vx, -1.5), 1.5)
+		}
 	    }
 	}, 1000 / 20); // updates per second
 
