@@ -10,6 +10,7 @@ export class Canvas extends Widget {
     public height: number;
     public gc: GraphicsContext;
     public canvas: HTMLCanvasElement;
+    public div: HTMLDivElement;
     public canvasGC: CanvasRenderingContext2D;
     public shape: boolean;
     private _scale: number;
@@ -22,11 +23,48 @@ export class Canvas extends Widget {
 	this.canvas = document.createElement('canvas');
 	this.canvas.width = this.width;
 	this.canvas.height = this.height;
+	this.canvas.style.zIndex   = "8";
+        this.canvas.style.position = "absolute";
+        this.canvas.style.border   = "1px solid";
 	this.canvasGC = this.canvas.getContext('2d')!;
 	this.gc = new GraphicsContext(this.canvasGC);
 	this.node.appendChild(this.canvas);
 	this.shape = false; // in the middle of a shape?
 	this.scale(this._scale, this._scale);
+
+	let dragging: boolean = false;
+	let lastX: number;
+	let lastY: number;
+	let marginLeft: number = 0;
+	let marginTop: number = 0;
+	let panel = this;
+
+	this.canvas.addEventListener('mousedown', function(e) {
+	    const evt = e || event as MouseEvent;
+	    dragging = true;
+	    lastX = evt.clientX;
+	    lastY = evt.clientY;
+	    e.preventDefault();
+	}, false);
+
+	this.canvas.addEventListener('mousemove', function(e) {
+	    const evt = e || event as MouseEvent;
+	    if (dragging) {
+		let deltaX = evt.clientX - lastX;
+		let deltaY = evt.clientY - lastY;
+		lastX = evt.clientX;
+		lastY = evt.clientY;
+		marginLeft += deltaX;
+		panel.canvas.style.marginLeft = marginLeft + "px";
+		marginTop += deltaY;
+		panel.canvas.style.marginTop = marginTop + "px";
+	    }
+	    e.preventDefault();
+	}, false);
+
+	this.canvas.addEventListener('mouseup', function() {
+	    dragging = false;
+	}, false);
     }
 
     clear() {
@@ -95,6 +133,10 @@ export class Canvas extends Widget {
 
     scale(x: number, y: number) {
 	this.gc.scale(x, y);
+    }
+
+    resetScale() {
+	this.gc.setTransform(1, 0, 0, 1, 0, 0);
     }
 
     rotate(angle: number) {

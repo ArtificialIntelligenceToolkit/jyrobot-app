@@ -22,9 +22,9 @@ export async function populateMenu(commands: CommandRegistry,
 				   mainMenu: IMainMenu,
 				   translator: ITranslator,
 				   robots: Robot[]) {
-    
+
     const open_table = "jyro:open-robot";
-    
+
     const jyroMenu = new Menu({commands});
     jyroMenu.title.label = 'Jyro';
     for (const robot of robots) {
@@ -124,7 +124,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 	function createPanel(): Promise<JyroPanel> {
 	    let panel: JyroPanel;
 	    return manager.ready.then(async () => {
-		panel = new JyroPanel(trans, world);
+		panel = new JyroPanel(commands, trans, world);
 		shell.add(panel, 'main');
 		return panel;
 	    });

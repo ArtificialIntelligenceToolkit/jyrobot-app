@@ -17,13 +17,72 @@ export class RangeSensor {
     public width: number; // radians
     public p1: number[];
     public time: number = 0;
+    public robot: Robot;
 
-    constructor(position: number, direction: number, max: number, width: number) {
+    constructor(robot: Robot, position: number, direction: number, max: number, width: number) {
+	this.robot = robot;
 	this.position = position;
 	this.direction = direction;
 	this.max = max;
 	this.width = width;
 	this.distance = this.reading * this.max;
+    }
+
+    update(canvas: Canvas) {
+	let p: number[] = this.robot.rotateAround(
+	    this.robot.x, this.robot.y, this.position, this.robot.direction + this.direction);
+	this.setReading(1.0);
+	// FIXME: width in radians
+	if (this.width !== 0) {
+	    for (let incr = -this.width/2; incr <= this.width/2; incr += this.width/2) {
+		let hit: Hit = this.robot.castRay(
+		    p[0], p[1], -this.robot.direction + Math.PI/2.0  + incr,
+		    this.max);
+		if (hit) {
+		    if (this.robot.debug) {
+			canvas.fill(new Color(0, 255, 0));
+			canvas.ellipse(p[0], p[1], 5, 5);
+			canvas.ellipse(hit.x, hit.y, 5, 5);
+		    }
+		    if (hit.distance < this.getDistance()) {
+			this.setDistance(hit.distance);
+		    }
+		}
+	    }
+	} else {
+	    let hit: Hit = this.robot.castRay(
+		p[0], p[1], -this.robot.direction + Math.PI/2.0,
+		this.max);
+	    if (hit) {
+		if (this.robot.debug) {
+		    canvas.fill(new Color(0, 255, 0));
+		    canvas.ellipse(p[0], p[1], 5, 5);
+		    canvas.ellipse(hit.x, hit.y, 5, 5);
+		}
+		if (hit.distance < this.getDistance()) {
+		    this.setDistance(hit.distance);
+		}
+	    }
+	}
+    }
+
+    draw(canvas: Canvas) {
+	if (this.getReading() < 1.0) {
+	    canvas.strokeStyle(new Color(255), 1);
+	} else {
+	    canvas.strokeStyle(new Color(0), 1);
+	}
+	canvas.fill(new Color(128, 0, 128, 64));
+	let p1 = this.robot.rotateAround(this.robot.x, this.robot.y, this.position, this.robot.direction + this.direction);
+	let dist = this.getDistance();
+	if (this.width > 0) {
+	    canvas.arc(p1[0], p1[1], dist, dist,
+		       this.robot.direction - this.width/2,
+		       this.robot.direction + this.width/2);
+	} else {
+	    const end: number[] = this.robot.rotateAround(p1[0], p1[1], dist, this.direction + this.direction);
+	    canvas.line(p1[0], p1[1], end[0], end[1]);
+	}
     }
 
     getDistance() {
@@ -56,7 +115,7 @@ export class Camera {
 	this.camera = new Array(this.cameraShape[0]);
     }
 
-    update() {
+    update(canvas: Canvas) {
 	for (let i=0; i<this.cameraShape[0]; i++) {
 	    const angle: number = i/this.cameraShape[0] * 60 - 30;
 	    this.camera[i] = this.robot.castRay(

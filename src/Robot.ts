@@ -62,7 +62,7 @@ export class Robot {
 	    this.cameras.push(camera);
 	}
 	for (let rangeConfig of config.rangeSensors) {
-	    let sensor = new RangeSensor(rangeConfig.position, rangeConfig.direction, rangeConfig.max, rangeConfig.width);
+	    let sensor = new RangeSensor(this, rangeConfig.position, rangeConfig.direction, rangeConfig.max, rangeConfig.width);
 	    this.range_sensors.push(sensor);
 	}
     }
@@ -246,46 +246,12 @@ export class Robot {
 	    this.direction = pdirection;
 	}
 	// Range Sensors:
-	for (let index=0; index < this.range_sensors.length; index++) {
-	    let range_sensor = this.range_sensors[index];
-	    let p: number[] = this.rotateAround(this.x, this.y, range_sensor.position, this.direction + range_sensor.direction);
-	    range_sensor.setReading(1.0);
-	    // FIXME: width in radians
-	    if (range_sensor.width !== 0) {
-		for (let incr = -range_sensor.width/2; incr <= range_sensor.width/2; incr += range_sensor.width/2) {
-		    let hit: Hit = this.castRay(
-			p[0], p[1], -this.direction + Math.PI/2.0  + incr,
-			range_sensor.max);
-		    if (hit) {
-			if (this.debug) {
-			    canvas.fill(new Color(0, 255, 0));
-			    canvas.ellipse(p[0], p[1], 5, 5);
-			    canvas.ellipse(hit.x, hit.y, 5, 5);
-			}
-			if (hit.distance < range_sensor.getDistance()) {
-			    range_sensor.setDistance(hit.distance);
-			}
-		    }
-		}
-	    } else {
-		let hit: Hit = this.castRay(
-		    p[0], p[1], -this.direction + Math.PI/2.0,
-		    range_sensor.max);
-		if (hit) {
-		    if (this.debug) {
-			canvas.fill(new Color(0, 255, 0));
-			canvas.ellipse(p[0], p[1], 5, 5);
-			canvas.ellipse(hit.x, hit.y, 5, 5);
-		    }
-		    if (hit.distance < range_sensor.getDistance()) {
-			range_sensor.setDistance(hit.distance);
-		    }
-		}
-	    }
+	for (let range_sensor of this.range_sensors) {
+	    range_sensor.update(canvas);
 	}
 	// Cameras:
 	for (let camera of this.cameras) {
-	    camera.update();
+	    camera.update(canvas);
 	}
     }
 
@@ -312,6 +278,7 @@ export class Robot {
 	canvas.pushMatrix();
 	canvas.translate(this.x, this.y);
 	canvas.rotate(this.direction);
+
 	// body:
 	if (this.stalled) {
 	    canvas.fill(new Color(128, 128, 128));
@@ -334,28 +301,14 @@ export class Robot {
 	canvas.fill(new Color(0, 64, 0));
 	canvas.strokeStyle(null, 0);
 	canvas.ellipse(0, 0, 1.67, 1.67);
+
 	for (let camera of this.cameras) {
 	    camera.draw(canvas);
 	}
 	canvas.popMatrix();
 
-	for (let index=0; index < this.range_sensors.length; index++) {
-	    if (this.range_sensors[index].getReading() < 1.0) {
-		canvas.strokeStyle(this.color, 1);
-	    } else {
-		canvas.strokeStyle(new Color(0), 1);
-	    }
-	    canvas.fill(new Color(128, 0, 128, 64));
-	    let p1 = this.rotateAround(this.x, this.y, this.range_sensors[index].position, this.direction + this.range_sensors[index].direction);
-	    let dist = this.range_sensors[index].getDistance();
-	    if (this.range_sensors[index].width > 0) {
-		canvas.arc(p1[0], p1[1], dist, dist,
-			   this.direction - this.range_sensors[index].width/2,
-			   this.direction + this.range_sensors[index].width/2);
-	    } else {
-		const end: number[] = this.rotateAround(p1[0], p1[1], dist, this.direction + this.range_sensors[index].direction);
-		canvas.line(p1[0], p1[1], end[0], end[1]);
-	    }
+	for (let range_sensor of this.range_sensors) {
+	    range_sensor.draw(canvas);
 	}
     }
 }

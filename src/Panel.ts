@@ -1,25 +1,31 @@
+import { CommandRegistry } from '@lumino/commands';
 import {
     ITranslator,
     TranslationBundle
 } from '@jupyterlab/translation';
-
-import { StackedPanel } from '@lumino/widgets';
-import {Canvas, Color} from "./utils";
+import {
+    CommandToolbarButton,
+    ICommandPalette,
+    MainAreaWidget,
+    WidgetTracker,
+} from '@jupyterlab/apputils';
+import { addIcon, clearIcon, listIcon } from '@jupyterlab/ui-components';
 
 import {World} from "./World";
 import {Robot} from "./Robot";
-import {Picture} from "./utils";
+import {Canvas, Color, Picture} from "./utils";
 
 const PANEL_CLASS = 'jyro-panel';
 
-export class JyroRobot extends StackedPanel {
+export class JyroRobot extends MainAreaWidget {
     private _translator: ITranslator;
     private _trans: TranslationBundle;
     private _canvas: Canvas;
 
     constructor(translator: ITranslator, robot: Robot) {
-	super();
-	this._canvas = new Canvas(500, 500, 2.0); // width, height, scale
+	const canvas = new Canvas(500, 500, 2.0); // width, height, scale
+	super({content: canvas});
+	this._canvas = canvas;
 	this._canvas.font("13px Arial");
 
 	window.setInterval(() => {
@@ -42,7 +48,7 @@ export class JyroRobot extends StackedPanel {
 	this.title.label = this._trans.__('Jyro: Robot ' + robot.name);
 	this.title.closable = true;
 
-	this.addWidget(this._canvas);
+	//this.addWidget(this._canvas);
     }
 
     format(v: number, decimals: number = 2): number {
@@ -50,14 +56,16 @@ export class JyroRobot extends StackedPanel {
     }
 }
 
-export class JyroPanel extends StackedPanel {
+export class JyroPanel extends MainAreaWidget {
     private _translator: ITranslator;
     private _trans: TranslationBundle;
     private _canvas: Canvas;
+    private _scale: number;
 
-    constructor(translator: ITranslator, world: World) {
-	super();
-	this._canvas = new Canvas(1000, 500, 2.0); // width, height, scale
+    constructor(commands: CommandRegistry, translator: ITranslator, world: World) {
+	const canvas = new Canvas(2000, 2000, 1.0); // width, height, scale
+	super({content: canvas});
+	this._canvas = canvas;
 	for (let index = 0; index< world.robots.length; index++) {
 	    world.robots[index].va = -0.025;
 	    world.robots[index].vx = 1.5;
@@ -79,8 +87,8 @@ export class JyroPanel extends StackedPanel {
 		    robot.vx = Math.min(Math.max(robot.vx, -1.5), 1.5)
 		}
 	    }
-	    world.time += 1/updates_per_second; 
-	}, 1000 / updates_per_second); 
+	    world.time += 1/updates_per_second;
+	}, 1000 / updates_per_second);
 
 	this._translator = translator;
 	this._trans = this._translator.load('jupyterlab');
@@ -89,8 +97,42 @@ export class JyroPanel extends StackedPanel {
 	this.id = 'JyroPanel';
 	this.title.label = this._trans.__('Jyro');
 	this.title.closable = true;
+	this._scale = 1.0;
 
-	this.addWidget(this._canvas);
+	const mycommands = new CommandRegistry();
+
+	mycommands.addCommand('jyro/world:zoom-in', {
+	    execute: () => {
+		this._scale *= 1.1;
+		canvas.resetScale();
+		canvas.scale(this._scale, this._scale);
+	    },
+	    icon: addIcon,
+	});
+
+	mycommands.addCommand('jyro/world:zoom-out', {
+	    execute: () => {
+		this._scale *= 0.9;
+		canvas.resetScale();
+		canvas.scale(this._scale, this._scale);
+	    },
+	    icon: clearIcon,
+	});
+
+	this.toolbar.addItem(
+            'zoom-in',
+            new CommandToolbarButton({
+		commands: mycommands,
+		id: 'jyro/world:zoom-in'
+            })
+	);
+	this.toolbar.addItem(
+            'zoom-out',
+            new CommandToolbarButton({
+		commands: mycommands,
+		id: 'jyro/world:zoom-out'
+            })
+	);
     }
 
     getCanvas(): Canvas {
