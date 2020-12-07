@@ -67,7 +67,7 @@ export class World {
       robot.world = this;
     }
 
-    update(canvas: Canvas) {
+    update(canvas: Canvas, time: number) {
 	canvas.clear();
         canvas.noStroke();
         canvas.fill(this.ground_color);
@@ -99,9 +99,8 @@ export class World {
         }
 	// Draw robots:
         for (let robot of this.robots) {
-            robot.update(canvas);
+            robot.update(canvas, time);
             robot.draw(canvas);
         }
-        this.time = this.time + 0.05;
     }
 }

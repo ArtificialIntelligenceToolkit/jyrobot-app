@@ -12,25 +12,57 @@ import {Picture} from "./utils";
 
 const PANEL_CLASS = 'jyro-panel';
 
+export class JyroRobot extends StackedPanel {
+    private _translator: ITranslator;
+    private _trans: TranslationBundle;
+    private _canvas: Canvas;
+
+    constructor(translator: ITranslator, robot: Robot) {
+	super();
+	this._canvas = new Canvas(500, 500, 2.0); // width, height, scale
+	this._canvas.font("13px Arial");
+
+	window.setInterval(() => {
+	    let pic: Picture = robot.cameras[0].takePicture();
+	    this._canvas.clear();
+	    this._canvas.picture(pic, 0, 0, 2.0); // x, y, scale
+	    this._canvas.fill(new Color(0, 0, 0, 255));
+	    let line: number = 130;
+	    for (let index=0; index < robot.range_sensors.length; index++) {
+		this._canvas.text(`IR[${index}]: ${this.format(robot.range_sensors[index].getReading())}`, 10, line+=15);
+	    }
+	    this._canvas.text(`Time: ${this.format(robot.time, 1)}`, 10, line+=20);
+	}, 1000 / 20); // updates per second
+
+	this._translator = translator;
+	this._trans = this._translator.load('jupyterlab');
+
+	this.addClass(PANEL_CLASS);
+	this.id = 'JyroPanel';
+	this.title.label = this._trans.__('Jyro: Robot ' + robot.name);
+	this.title.closable = true;
+
+	this.addWidget(this._canvas);
+    }
+
+    format(v: number, decimals: number = 2): number {
+	return parseFloat(v.toFixed(decimals));
+    }
+}
+
 export class JyroPanel extends StackedPanel {
     private _translator: ITranslator;
     private _trans: TranslationBundle;
     private _canvas: Canvas;
 
-    constructor(translator: ITranslator) {
+    constructor(translator: ITranslator, world: World) {
 	super();
-	this._canvas = new Canvas(2000, 500, 2.0); // width, height, scale
+	this._canvas = new Canvas(1000, 500, 2.0); // width, height, scale
 
-	const world: World = new World(500, 250);
 	world.addBox(new Color(0), 100, 0, 110, 110);
 	world.addBox(new Color(255, 0, 255), 200, 95, 210, 170);
 	world.addBox(new Color(255, 255, 0), 300, 0, 310, 95);
 	world.addBox(new Color(255, 128, 0), 300, 190, 310, 250);
-	// Create robot, and add to world:
-	let robot: Robot = new Robot(430, 50, 0, new Color(255, 0, 0));
-	world.addRobot(robot);
-	robot = new Robot(30, 50, 0, new Color(0, 0, 255))
-	world.addRobot(robot);
 	for (let index = 0; index< world.robots.length; index++) {
 	    world.robots[index].va = -0.025;
 	    world.robots[index].vx = 1.5;
@@ -38,17 +70,9 @@ export class JyroPanel extends StackedPanel {
 	this._canvas.font("15px Arial");
 
 	window.setInterval(() => {
-	    world.update(this._canvas);
-	    let pic: Picture = robot.takePicture();
-	    this._canvas.picture(pic, 2 * 500 + 3, 0, 2.0); // x, y, scale
-	    this._canvas.fill(new Color(0, 0, 0, 255));
-	    let line: number = 150;
-	    for (let index=0; index < robot.range_sensors.length; index++) {
-		this._canvas.text(`IR[0]: ${this.format(robot.range_sensors[index].getReading())}`, 520, line+=20);
-	    }
-	    this._canvas.text(`Time: ${this.format(world.time, 1)}`, 520, line+=20);
+	    world.update(this._canvas, world.time);
 	    for (let index = 0; index< world.robots.length; index++) {
-		robot = world.robots[index];
+		let robot: Robot = world.robots[index];
 		if (robot.stalled) {
 		    robot.va = 0;
 		    robot.vx = 0;
@@ -59,6 +83,7 @@ export class JyroPanel extends StackedPanel {
 		    robot.vx = Math.min(Math.max(robot.vx, -1.5), 1.5)
 		}
 	    }
+	    world.time += 0.05; // time, in seconds
 	}, 1000 / 20); // updates per second
 
 	this._translator = translator;
@@ -70,10 +95,6 @@ export class JyroPanel extends StackedPanel {
 	this.title.closable = true;
 
 	this.addWidget(this._canvas);
-    }
-
-    format(v: number, decimals: number = 2): number {
-	return parseFloat(v.toFixed(decimals));
     }
 
     getCanvas(): Canvas {

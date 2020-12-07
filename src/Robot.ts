@@ -16,6 +16,7 @@ export class RangeSensor {
     public position: number;
     public width: number; // radians
     public p1: number[];
+    public time: number = 0;
 
     constructor(position: number, direction: number, max: number, width: number) {
 	this.position = position;
@@ -44,77 +45,33 @@ export class RangeSensor {
     }
 }
 
-export class Robot {
-    public x: number;
-    public y: number;
-    public direction: number;
-    public debug: boolean;
-    public vx: number; // velocity in x direction
-    public vy: number; // velocity in y direction
-    public va: number; // turn velocity
-    public world: World;
-    // sensors
-    public stalled: boolean;
-    public state: string;
-    public time: number;
-    public bounding_box: Matrix;
-    public color: Color;
-    public range_sensors: RangeSensor[];
-    public camera: Hit[];
-    public cam: boolean;
+export class Camera {
     public cameraShape: number[];
-    public trace: Point[];
-    public doTrace: boolean;
-    public max_trace_length: number;
+    public camera: Hit[];
+    public robot: Robot;
 
-    initialize() {
-	this.doTrace = true;
-	this.trace = [];
-	this.max_trace_length = 1000;
-	this.x = 0;
-	this.y = 0;
-	this.direction = 0;
-	this.state = "";
-	this.time = 0;
-	this.debug = false;
-	this.vx = 0.0; // velocity in x direction
-	this.vy = 0.0; // velocity in y direction
-	this.va = 0.0; // turn velocity
-	this.stalled = false;
-	this.state = "";
-	this.time = 0;
-	this.bounding_box = new Matrix(4, 2);
-	this.range_sensors = [
-	    new RangeSensor(8.3, 0, 100, 0.05),
-	    new RangeSensor(8.3, Math.PI/8, 20, 1.0),
-	    new RangeSensor(8.3, -Math.PI/8, 20, 1.0)
-	];
+    constructor(robot: Robot) {
+	this.robot = robot;
 	this.cameraShape = [256, 128];
 	this.camera = new Array(this.cameraShape[0]);
-	this.cam = false;
     }
 
-    constructor(x: number, y: number, direction: number, color: Color) {
-	this.initialize();
-	this.x = x;
-	this.y = y;
-	this.direction = direction;
-	this.state = "";
-	this.time = 0;
-	this.color = color;
+    update() {
+	for (let i=0; i<this.cameraShape[0]; i++) {
+	    const angle: number = i/this.cameraShape[0] * 60 - 30;
+	    this.camera[i] = this.robot.castRay(this.robot.x, this.robot.y, this.robot.direction + Math.PI/2.0 - angle*Math.PI/180.0, 1000);
+	}
     }
 
-    forward(vx: number) {
-	this.vx = vx;
+    draw(canvas: Canvas) {
+	canvas.fill(new Color(0, 64, 0));
+	canvas.strokeStyle(null, 0);
+	canvas.rect(5.0, -3.33, 1.33, 6.33);
     }
-
-    backward(vx: number) {
-	this.vx = -vx;
-    }
-
+    
     takePicture(): Picture {
 	const pic: Picture = new Picture(this.cameraShape[0], this.cameraShape[1]);
-	const size: number = Math.max(this.world.w, this.world.h);
+	const size: number = Math.max(this.robot.world.w, this.robot.world.h);
 	for (let i=0; i < this.cameraShape[0]; i++) {
 	    const hit: Hit = this.camera[i];
 	    let high: number;
@@ -142,6 +99,73 @@ export class Robot {
 	    }
 	}
 	return pic;
+    }
+}
+
+export class Robot {
+    public name: string;
+    public x: number;
+    public y: number;
+    public direction: number;
+    public debug: boolean;
+    public vx: number; // velocity in x direction
+    public vy: number; // velocity in y direction
+    public va: number; // turn velocity
+    public world: World;
+    // sensors
+    public stalled: boolean;
+    public state: string;
+    public time: number;
+    public bounding_box: Matrix;
+    public color: Color;
+    public range_sensors: RangeSensor[];
+    public cameras: Camera[];
+    public trace: Point[];
+    public doTrace: boolean;
+    public max_trace_length: number;
+
+    initialize() {
+	this.doTrace = true;
+	this.trace = [];
+	this.max_trace_length = 1000;
+	this.x = 0;
+	this.y = 0;
+	this.direction = 0;
+	this.state = "";
+	this.time = 0;
+	this.debug = false;
+	this.vx = 0.0; // velocity in x direction
+	this.vy = 0.0; // velocity in y direction
+	this.va = 0.0; // turn velocity
+	this.stalled = false;
+	this.state = "";
+	this.time = 0;
+	this.bounding_box = new Matrix(4, 2);
+	this.range_sensors = [
+	    new RangeSensor(8.3, 0, 100, 0.05),
+	    new RangeSensor(8.3, Math.PI/8, 20, 1.0),
+	    new RangeSensor(8.3, -Math.PI/8, 20, 1.0)
+	];
+	this.cameras = [new Camera(this)];
+    }
+
+    constructor(name: string, x: number, y: number, direction: number, color: Color) {
+	this.initialize();
+	this.name = name;
+	this.x = x;
+	this.y = y;
+	this.direction = direction;
+	this.state = "";
+	this.time = 0;
+	this.color = color;
+    }
+
+    forward(vx: number) {
+	this.vx = vx;
+    }
+
+    backward(vx: number) {
+	this.vx = -vx;
     }
 
     turn(va: number) {
@@ -258,7 +282,8 @@ export class Robot {
 	return minimum;
     }
 
-    update(canvas: Canvas) {
+    update(canvas: Canvas, time: number) {
+	this.time = time;
 	if (this.doTrace) {
 	    this.trace.push(new Point(this.x, this.y));
 	    if (this.trace.length > this.max_trace_length) {
@@ -318,8 +343,7 @@ export class Robot {
 	} else {
 	    //this.direction += random(.2) - .1;
 	}
-	// update sensors, camera
-	// on right:
+	// Range Sensors:
 	for (let index=0; index < this.range_sensors.length; index++) {
 	    let range_sensor = this.range_sensors[index];
 	    let p: number[] = this.rotateAround(this.x, this.y, range_sensor.position, this.direction + range_sensor.direction);
@@ -357,12 +381,9 @@ export class Robot {
 		}
 	    }
 	}
-	// camera:
-	if (true) {
-	    for (let i=0; i<this.cameraShape[0]; i++) {
-		const angle: number = i/this.cameraShape[0] * 60 - 30;
-		this.camera[i] = this.castRay(this.x, this.y, -this.direction + Math.PI/2.0 - angle*Math.PI/180.0, 1000);
-	    }
+	// Cameras:
+	for (let camera of this.cameras) {
+	    camera.update();
 	}
     }
 
@@ -418,10 +439,9 @@ export class Robot {
 	canvas.fill(new Color(0, 64, 0));
 	canvas.strokeStyle(null, 0);
 	canvas.ellipse(0, 0, 1.67, 1.67);
-	// fluke
-	canvas.fill(new Color(0, 64, 0));
-	canvas.strokeStyle(null, 0);
-	canvas.rect(5.0, -3.33, 1.33, 6.33);
+	for (let camera of this.cameras) {
+	    camera.draw(canvas);
+	}
 	canvas.popMatrix();
 
 	for (let index=0; index < this.range_sensors.length; index++) {
