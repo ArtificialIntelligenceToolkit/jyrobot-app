@@ -67,12 +67,59 @@ const extension: JupyterFrontEndPlugin<void> = {
 	const trans = translator || nullTranslator;
 	const _trans = trans.load('jupyterlab');
 
-	const world: World = new World(500, 250);
+	let config: any = {
+	    world: {
+		width: 500,
+		height: 250,
+		boxes: [
+		    {color: [  0, 0,   0], p1: {x: 100, y: 0}, p2: {x: 110, y: 110}},
+		    {color: [255, 0, 255], p1: {x: 200, y: 95}, p2: {x: 210, y: 170}},
+		    {color: [255, 255, 0], p1: {x: 300, y: 0}, p2: {x: 310, y: 95}},
+		    {color: [255, 128, 0], p1: {x: 300, y: 190}, p2: {x: 310, y: 250}},
+		],
+	    },
+	    robots: [
+		{
+		    name: "Red",
+		    x: 430, y: 50, direction: 0,
+		    color: [255, 0, 0],
+		    cameras: [null],
+		    rangeSensors: [
+			{position: 8.2, direction: 0, max: 100, width: 0.05},
+			{position: 8.2, direction: Math.PI/8, max: 20, width: 1.0},
+			{position: 8.2, direction: -Math.PI/8, max: 20, width: 1.0},
+		    ],
+		    body: [ // CM
+			[4.17, 5.0], [4.17, 6.67], [5.83, 5.83], [5.83, 5.0], [7.5, 5.0], [7.5, -5.0], [5.83, -5.0],
+			[5.83, -5.83], [4.17, -6.67], [4.17, -5.0], [-4.17, -5.0], [-4.17, -6.67], [-5.83, -5.83],
+			[-6.67, -5.0], [-7.5, -4.17], [-7.5, 4.17], [-6.67, 5.0], [-5.83, 5.83], [-4.17, 6.67],
+			[-4.17, 5.0]
+		    ],
+		},
+		{
+		    name: "Blue",
+		    x: 30, y: 50, direction: 0,
+		    color: [0, 0, 255],
+		    cameras: [null],
+		    rangeSensors: [
+			{position: 8.2, direction: 0, max: 100, width: 0.05},
+			{position: 8.2, direction: Math.PI/8, max: 20, width: 1.0},
+			{position: 8.2, direction: -Math.PI/8, max: 20, width: 1.0},
+		    ],
+		    body: [ // CM
+			[4.17, 5.0], [4.17, 6.67], [5.83, 5.83], [5.83, 5.0], [7.5, 5.0], [7.5, -5.0], [5.83, -5.0],
+			[5.83, -5.83], [4.17, -6.67], [4.17, -5.0], [-4.17, -5.0], [-4.17, -6.67], [-5.83, -5.83],
+			[-6.67, -5.0], [-7.5, -4.17], [-7.5, 4.17], [-6.67, 5.0], [-5.83, 5.83], [-4.17, 6.67],
+			[-4.17, 5.0]
+		    ],
+		},
+	    ]};
+	const world: World = new World(config.world);
 	// Create robot, and add to world:
-	let robot: Robot = new Robot("Red", 430, 50, 0, new Color(255, 0, 0));
-	world.addRobot(robot);
-	robot = new Robot("Blue", 30, 50, 0, new Color(0, 0, 255))
-	world.addRobot(robot);
+	for (let robotConfig of config.robots)  {
+	    let robot: Robot = new Robot(robotConfig);
+	    world.addRobot(robot);
+	}
 
 	function createPanel(): Promise<JyroPanel> {
 	    let panel: JyroPanel;

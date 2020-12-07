@@ -1,106 +1,7 @@
 import {Color, Matrix, Point, Picture, Canvas} from "./utils";
 import {Hit} from "./Hit";
 import {World} from "./World";
-
-export class RangeSensor {
-    /*
-       A range sensor that reads "reading" when
-       no obstacle has been detected. "reading" is
-       a ratio of distance/max, and "distance" is
-       the reading in CM.
-    */
-    public max: number = 20; // CM
-    public reading: number = 1.0;
-    public distance: number;
-    public direction: number;
-    public position: number;
-    public width: number; // radians
-    public p1: number[];
-    public time: number = 0;
-
-    constructor(position: number, direction: number, max: number, width: number) {
-	this.position = position;
-	this.direction = direction;
-	this.max = max;
-	this.width = width;
-	this.distance = this.reading * this.max;
-    }
-
-    getDistance() {
-	return this.distance;
-    }
-
-    getReading() {
-	return this.reading;
-    }
-
-    setDistance(distance: number) {
-	this.distance = distance;
-	this.reading = distance/this.max;
-    }
-
-    setReading(reading: number) {
-	this.reading = reading;
-	this.distance = reading * this.max;
-    }
-}
-
-export class Camera {
-    public cameraShape: number[];
-    public camera: Hit[];
-    public robot: Robot;
-
-    constructor(robot: Robot) {
-	this.robot = robot;
-	this.cameraShape = [256, 128];
-	this.camera = new Array(this.cameraShape[0]);
-    }
-
-    update() {
-	for (let i=0; i<this.cameraShape[0]; i++) {
-	    const angle: number = i/this.cameraShape[0] * 60 - 30;
-	    this.camera[i] = this.robot.castRay(this.robot.x, this.robot.y, this.robot.direction + Math.PI/2.0 - angle*Math.PI/180.0, 1000);
-	}
-    }
-
-    draw(canvas: Canvas) {
-	canvas.fill(new Color(0, 64, 0));
-	canvas.strokeStyle(null, 0);
-	canvas.rect(5.0, -3.33, 1.33, 6.33);
-    }
-    
-    takePicture(): Picture {
-	const pic: Picture = new Picture(this.cameraShape[0], this.cameraShape[1]);
-	const size: number = Math.max(this.robot.world.w, this.robot.world.h);
-	for (let i=0; i < this.cameraShape[0]; i++) {
-	    const hit: Hit = this.camera[i];
-	    let high: number;
-	    let hcolor: Color = null;
-	    if (hit) {
-		const s: number = Math.max(Math.min(1.0 - hit.distance/size, 1.0), 0.0);
-		const r: number = hit.color.red;
-		const g: number = hit.color.green;
-		const b: number = hit.color.blue;
-		hcolor = new Color(r * s, g * s, b * s);
-		high = (1.0 - s) * 128;
-		//pg.line(i, 0 + high/2, i, 128 - high/2);
-	    } else {
-		high = 0;
-	    }
-	    for (let j = 0; j < this.cameraShape[1]; j++) {
-		if (j < high/2) { //256 - high/2.0) { // sky
-		    pic.set(i, j, new Color(0, 0, 128));
-		} else if (j < this.cameraShape[1] - high/2) { //256 - high && hcolor != null) { // hit
-		    if (hcolor !== null)
-			pic.set(i, j, hcolor);
-		} else { // ground
-		    pic.set(i, j, new Color(0, 128, 0));
-		}
-	    }
-	}
-	return pic;
-    }
-}
+import {Camera, RangeSensor} from "./sensors";
 
 export class Robot {
     public name: string;
@@ -123,6 +24,7 @@ export class Robot {
     public trace: Point[];
     public doTrace: boolean;
     public max_trace_length: number;
+    public body: number[][];
 
     initialize() {
 	this.doTrace = true;
@@ -141,23 +43,28 @@ export class Robot {
 	this.state = "";
 	this.time = 0;
 	this.bounding_box = new Matrix(4, 2);
-	this.range_sensors = [
-	    new RangeSensor(8.3, 0, 100, 0.05),
-	    new RangeSensor(8.3, Math.PI/8, 20, 1.0),
-	    new RangeSensor(8.3, -Math.PI/8, 20, 1.0)
-	];
-	this.cameras = [new Camera(this)];
-    }
-
-    constructor(name: string, x: number, y: number, direction: number, color: Color) {
-	this.initialize();
-	this.name = name;
-	this.x = x;
-	this.y = y;
-	this.direction = direction;
+	this.range_sensors = [];
+	this.cameras = [];
 	this.state = "";
 	this.time = 0;
-	this.color = color;
+    }
+
+    constructor(config: any) {
+	this.initialize();
+	this.name = config.name;
+	this.x = config.x;
+	this.y = config.y;
+	this.direction = config.direction;
+	this.color = new Color(config.color[0], config.color[1], config.color[2]) ;
+	this.body = config.body;
+	for (let cameraConfig of config.cameras) {
+	    let camera = new Camera(this);
+	    this.cameras.push(camera);
+	}
+	for (let rangeConfig of config.rangeSensors) {
+	    let sensor = new RangeSensor(rangeConfig.position, rangeConfig.direction, rangeConfig.max, rangeConfig.width);
+	    this.range_sensors.push(sensor);
+	}
     }
 
     forward(vx: number) {
@@ -337,11 +244,6 @@ export class Robot {
 	    this.x = px;
 	    this.y = py;
 	    this.direction = pdirection;
-	    if (tvx !== 0 && Math.random() < .01) {
-		//this.direction += random(.1) - .05; // a bit of noise
-	    }
-	} else {
-	    //this.direction += random(.2) - .1;
 	}
 	// Range Sensors:
 	for (let index=0; index < this.range_sensors.length; index++) {
@@ -395,13 +297,6 @@ export class Robot {
     }
 
     draw(canvas: Canvas) {
-	const body: number[][] = [ // CM
-	    [4.17, 5.0], [4.17, 6.67], [5.83, 5.83], [5.83, 5.0], [7.5, 5.0], [7.5, -5.0], [5.83, -5.0],
-	    [5.83, -5.83], [4.17, -6.67], [4.17, -5.0], [-4.17, -5.0], [-4.17, -6.67], [-5.83, -5.83],
-	    [-6.67, -5.0], [-7.5, -4.17], [-7.5, 4.17], [-6.67, 5.0], [-5.83, 5.83], [-4.17, 6.67],
-	    [-4.17, 5.0]
-	];
-
 	if (this.debug) {
 	    canvas.strokeStyle(new Color(255), 1);
 	    // bounding box:
@@ -426,8 +321,8 @@ export class Robot {
 	    canvas.noStroke();
 	}
 	canvas.beginShape();
-	for (let i =0; i < body.length; i++) {
-	    canvas.vertex(body[i][0], body[i][1]);
+	for (let i =0; i < this.body.length; i++) {
+	    canvas.vertex(this.body[i][0], this.body[i][1]);
 	}
 	canvas.endShape();
 	canvas.noStroke();

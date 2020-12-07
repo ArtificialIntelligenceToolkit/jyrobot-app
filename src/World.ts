@@ -23,10 +23,10 @@ export class World {
     public boundary_wall_width: number = 1;
     public ground_color: Color;
 
-    constructor(w: number, h: number) {
+    constructor(config: any) {
         this.time = 0;
-        this.w = w;
-        this.h = h;
+        this.w = config.width;
+        this.h = config.height;
 	this.boundary_wall_color = new Color(128, 0, 128);
 	this.ground_color = new Color(0, 128, 0)
 	// Put a wall around boundary:
@@ -39,6 +39,10 @@ export class World {
         this.addWall(this.boundary_wall_color, new Line(p2, p3));
         this.addWall(this.boundary_wall_color, new Line(p3, p4));
         this.addWall(this.boundary_wall_color, new Line(p4, p1));
+	for (let box of config.boxes) {
+	    this.addBox(new Color(box.color[0], box.color[1], box.color[2]),
+			box.p1.x, box.p1.y, box.p2.x, box.p2.y);
+	}
     }
 
     format(v: number): number {

@@ -58,17 +58,13 @@ export class JyroPanel extends StackedPanel {
     constructor(translator: ITranslator, world: World) {
 	super();
 	this._canvas = new Canvas(1000, 500, 2.0); // width, height, scale
-
-	world.addBox(new Color(0), 100, 0, 110, 110);
-	world.addBox(new Color(255, 0, 255), 200, 95, 210, 170);
-	world.addBox(new Color(255, 255, 0), 300, 0, 310, 95);
-	world.addBox(new Color(255, 128, 0), 300, 190, 310, 250);
 	for (let index = 0; index< world.robots.length; index++) {
 	    world.robots[index].va = -0.025;
 	    world.robots[index].vx = 1.5;
 	}
 	this._canvas.font("15px Arial");
 
+	let updates_per_second = 10;
 	window.setInterval(() => {
 	    world.update(this._canvas, world.time);
 	    for (let index = 0; index< world.robots.length; index++) {
@@ -83,8 +79,8 @@ export class JyroPanel extends StackedPanel {
 		    robot.vx = Math.min(Math.max(robot.vx, -1.5), 1.5)
 		}
 	    }
-	    world.time += 0.05; // time, in seconds
-	}, 1000 / 20); // updates per second
+	    world.time += 1/updates_per_second; 
+	}, 1000 / updates_per_second); 
 
 	this._translator = translator;
 	this._trans = this._translator.load('jupyterlab');
