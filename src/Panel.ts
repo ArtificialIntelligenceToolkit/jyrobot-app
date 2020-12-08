@@ -9,7 +9,7 @@ import {
     MainAreaWidget,
     WidgetTracker,
 } from '@jupyterlab/apputils';
-import { addIcon, clearIcon, listIcon } from '@jupyterlab/ui-components';
+import { addIcon, clearIcon, listIcon, runIcon, stopIcon } from '@jupyterlab/ui-components';
 
 import {World} from "./World";
 import {Robot} from "./Robot";
@@ -66,15 +66,23 @@ export class JyroPanel extends MainAreaWidget {
 	const canvas = new Canvas(2000, 2000, 1.0); // width, height, scale
 	super({content: canvas});
 	this._canvas = canvas;
+	this._canvas.font("15px Arial");
+
+	let updates_per_second = 10;
+	let panel = this;
+
+	// Update and draw it once:
+	world.update(panel._canvas, world.time);
+	world.draw(panel._canvas);
+
+	// Itinitalize robot velocities:
 	for (let index = 0; index< world.robots.length; index++) {
 	    world.robots[index].va = -0.025;
 	    world.robots[index].vx = 1.5;
 	}
-	this._canvas.font("15px Arial");
-
-	let updates_per_second = 10;
-	window.setInterval(() => {
-	    world.update(this._canvas, world.time);
+	let runLoop = function() {
+	    world.update(panel._canvas, world.time);
+	    world.draw(panel._canvas);
 	    for (let index = 0; index< world.robots.length; index++) {
 		let robot: Robot = world.robots[index];
 		if (robot.stalled) {
@@ -88,7 +96,9 @@ export class JyroPanel extends MainAreaWidget {
 		}
 	    }
 	    world.time += 1/updates_per_second;
-	}, 1000 / updates_per_second);
+	}
+
+	let loop: number= null;
 
 	this._translator = translator;
 	this._trans = this._translator.load('jupyterlab');
@@ -101,11 +111,31 @@ export class JyroPanel extends MainAreaWidget {
 
 	const mycommands = new CommandRegistry();
 
+	mycommands.addCommand('jyro/world:stop', {
+	    execute: () => {
+		clearInterval(loop);
+		loop = null;
+	    },
+	    icon: stopIcon,
+	});
+
+	mycommands.addCommand('jyro/world:start', {
+	    execute: () => {
+		if (loop === null) {
+		    loop = window.setInterval(runLoop, 1000 / updates_per_second);
+		}
+	    },
+	    icon: runIcon,
+	});
+
 	mycommands.addCommand('jyro/world:zoom-in', {
 	    execute: () => {
 		this._scale *= 1.1;
 		canvas.resetScale();
 		canvas.scale(this._scale, this._scale);
+		if (loop === null)
+		    world.draw(panel._canvas);
+
 	    },
 	    icon: addIcon,
 	});
@@ -115,6 +145,8 @@ export class JyroPanel extends MainAreaWidget {
 		this._scale *= 0.9;
 		canvas.resetScale();
 		canvas.scale(this._scale, this._scale);
+		if (loop === null)
+		    world.draw(panel._canvas);
 	    },
 	    icon: clearIcon,
 	});
@@ -131,6 +163,20 @@ export class JyroPanel extends MainAreaWidget {
             new CommandToolbarButton({
 		commands: mycommands,
 		id: 'jyro/world:zoom-out'
+            })
+	);
+	this.toolbar.addItem(
+            'start',
+            new CommandToolbarButton({
+		commands: mycommands,
+		id: 'jyro/world:start'
+            })
+	);
+	this.toolbar.addItem(
+            'stop',
+            new CommandToolbarButton({
+		commands: mycommands,
+		id: 'jyro/world:stop'
             })
 	);
     }

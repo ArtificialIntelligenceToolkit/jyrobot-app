@@ -81,7 +81,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 	    robots: [
 		{
 		    name: "Red",
-		    x: 430, y: 50, direction: 0,
+		    x: 430, y: 50, direction: Math.PI,
 		    color: [255, 0, 0],
 		    cameras: [null],
 		    rangeSensors: [
@@ -98,7 +98,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 		},
 		{
 		    name: "Blue",
-		    x: 30, y: 50, direction: 0,
+		    x: 380, y: 50, direction: 0,
 		    color: [0, 0, 255],
 		    cameras: [null],
 		    rangeSensors: [

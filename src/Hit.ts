@@ -7,9 +7,11 @@ export class Hit {
     public start_x: number;
     public start_y: number;
     public color: Color;
+    public height: number;
 
-    constructor(x: number, y: number, distance: number, color: Color,
+    constructor(height: number, x: number, y: number, distance: number, color: Color,
 		start_x: number, start_y: number) {
+	this.height = height;
 	this.x = x;
 	this.y = y;
 	this.distance = distance;

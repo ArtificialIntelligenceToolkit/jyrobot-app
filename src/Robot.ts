@@ -1,4 +1,4 @@
-import {Color, Matrix, Point, Picture, Canvas} from "./utils";
+import {Color, Line, Point, Picture, Canvas} from "./utils";
 import {Hit} from "./Hit";
 import {World} from "./World";
 import {Camera, RangeSensor} from "./sensors";
@@ -17,7 +17,7 @@ export class Robot {
     public stalled: boolean;
     public state: string;
     public time: number;
-    public bounding_box: Matrix;
+    public bounding_lines: Line[];
     public color: Color;
     public range_sensors: RangeSensor[];
     public cameras: Camera[];
@@ -42,7 +42,12 @@ export class Robot {
 	this.stalled = false;
 	this.state = "";
 	this.time = 0;
-	this.bounding_box = new Matrix(4, 2);
+	this.bounding_lines = [
+	    new Line(new Point(0,0), new Point(0,0)),
+	    new Line(new Point(0,0), new Point(0,0)),
+	    new Line(new Point(0,0), new Point(0,0)),
+	    new Line(new Point(0,0), new Point(0,0)),
+	];
 	this.range_sensors = [];
 	this.cameras = [];
 	this.state = "";
@@ -153,13 +158,18 @@ export class Robot {
 	return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
     }
 
-    castRay(x1: number, y1: number, a: number, maxRange: number): Hit {
+    castRay(x1: number, y1: number, a: number, maxRange: number, seeRobots: boolean): Hit {
+	// Just walls, not robots
 	const hits: Hit[] = [];
 	const x2: number = Math.sin(a) * maxRange + x1;
 	const y2: number = Math.cos(a) * maxRange + y1;
 	let dist: number = null;
+	let height: number;
 
 	for (let wall of this.world.walls) {
+	    // either seeRobots is true and not self, or only walls
+	    if ((seeRobots && (wall.robot === this)) || (!seeRobots && (wall.robot !== null)))
+		continue;
 	    for (let line of wall.lines) {
 		const p1: Point = line.p1;
 		const p2: Point = line.p2;
@@ -167,7 +177,7 @@ export class Robot {
 						       p1.x, p1.y, p2.x, p2.y);
 		if (pos !== null) {
 		    dist = this.distance(pos[0], pos[1], x1, y1);
-		    hits.push(new Hit(pos[0], pos[1], dist, wall.color, x1, y1));
+		    hits.push(new Hit(1.0, pos[0], pos[1], dist, wall.color, x1, y1));
 		}
 	    }
 	}
@@ -176,6 +186,32 @@ export class Robot {
 	} else {
 	    return this.min_hit(hits);
 	}
+    }
+
+    castRayRobot(x1: number, y1: number, a: number, maxRange: number): Hit[] {
+	// Just robots, not walls
+	const hits: Hit[] = [];
+	const x2: number = Math.sin(a) * maxRange + x1;
+	const y2: number = Math.cos(a) * maxRange + y1;
+	let dist: number = null;
+	let height: number;
+
+	for (let wall of this.world.walls) {
+	    // if a wall, or self, continue:
+	    if (wall.robot === null || wall.robot === this)
+		continue;
+	    for (let line of wall.lines) {
+		const p1: Point = line.p1;
+		const p2: Point = line.p2;
+		let pos: number[] = this.intersect_hit(x1, y1, x2, y2,
+						       p1.x, p1.y, p2.x, p2.y);
+		if (pos !== null) {
+		    dist = this.distance(pos[0], pos[1], x1, y1);
+		    hits.push(new Hit(1.0, pos[0], pos[1], dist, wall.color, x1, y1));
+		}
+	    }
+	}
+	return hits;
     }
 
     min_hit(hits: Hit[]): Hit {
@@ -216,13 +252,32 @@ export class Robot {
 	const p2: number[] = this.rotateAround(px, py, 10, pdirection + Math.PI/4 + 1 * Math.PI/2);
 	const p3: number[] = this.rotateAround(px, py, 10, pdirection + Math.PI/4 + 2 * Math.PI/2);
 	const p4: number[] = this.rotateAround(px, py, 10, pdirection + Math.PI/4 + 3 * Math.PI/2);
-	this.bounding_box[0] = p1;
-	this.bounding_box[1] = p2;
-	this.bounding_box[2] = p3;
-	this.bounding_box[3] = p4;
+
+	this.bounding_lines[0].p1.x = p1[0];
+	this.bounding_lines[0].p1.y = p1[1];
+	this.bounding_lines[0].p2.x = p2[0];
+	this.bounding_lines[0].p2.y = p2[1];
+
+	this.bounding_lines[1].p1.x = p2[0];
+	this.bounding_lines[1].p1.y = p2[1];
+	this.bounding_lines[1].p2.x = p3[0];
+	this.bounding_lines[1].p2.y = p3[1];
+
+	this.bounding_lines[2].p1.x = p3[0];
+	this.bounding_lines[2].p1.y = p3[1];
+	this.bounding_lines[2].p2.x = p4[0];
+	this.bounding_lines[2].p2.y = p4[1];
+
+	this.bounding_lines[3].p1.x = p4[0];
+	this.bounding_lines[3].p1.y = p4[1];
+	this.bounding_lines[3].p2.x = p1[0];
+	this.bounding_lines[3].p2.y = p1[1];
+
 	this.stalled = false;
 	// if intersection, can't move:
 	for (let wall of this.world.walls) {
+	    if (wall.robot === this) // if yourself, don't check for collision
+		continue;
 	    for (let line of wall.lines) {
 		const w1: Point = line.p1;
 		const w2: Point = line.p2;
@@ -265,15 +320,17 @@ export class Robot {
     draw(canvas: Canvas) {
 	if (this.debug) {
 	    canvas.strokeStyle(new Color(255), 1);
-	    // bounding box:
-	    const p1: number[] = this.rotateAround(this.x, this.y, 10, this.direction + Math.PI/4.0 + 0 * Math.PI/2.0);
-	    const p2: number[] = this.rotateAround(this.x, this.y, 10, this.direction + Math.PI/4.0 + 1 * Math.PI/2.0);
-	    const p3: number[] = this.rotateAround(this.x, this.y, 10, this.direction + Math.PI/4.0 + 2 * Math.PI/2.0);
-	    const p4: number[] = this.rotateAround(this.x, this.y, 10, this.direction + Math.PI/4.0 + 3 * Math.PI/2.0);
-	    canvas.line(p1[0], p1[1], p2[0], p2[1]);
-	    canvas.line(p2[0], p2[1], p3[0], p3[1]);
-	    canvas.line(p3[0], p3[1], p4[0], p4[1]);
-	    canvas.line(p4[0], p4[1], p1[0], p1[1]);
+	    canvas.line(this.bounding_lines[0].p1.x, this.bounding_lines[0].p1.y,
+			this.bounding_lines[0].p2.x, this.bounding_lines[0].p2.y);
+
+	    canvas.line(this.bounding_lines[1].p1.x, this.bounding_lines[1].p1.y,
+			this.bounding_lines[1].p2.x, this.bounding_lines[1].p2.y);
+
+	    canvas.line(this.bounding_lines[2].p1.x, this.bounding_lines[2].p1.y,
+			this.bounding_lines[2].p2.x, this.bounding_lines[2].p2.y);
+
+	    canvas.line(this.bounding_lines[3].p1.x, this.bounding_lines[3].p1.y,
+			this.bounding_lines[3].p2.x, this.bounding_lines[3].p2.y);
 	}
 	canvas.pushMatrix();
 	canvas.translate(this.x, this.y);

@@ -37,7 +37,7 @@ export class RangeSensor {
 	    for (let incr = -this.width/2; incr <= this.width/2; incr += this.width/2) {
 		let hit: Hit = this.robot.castRay(
 		    p[0], p[1], -this.robot.direction + Math.PI/2.0  + incr,
-		    this.max);
+		    this.max, true);
 		if (hit) {
 		    if (this.robot.debug) {
 			canvas.fill(new Color(0, 255, 0));
@@ -52,7 +52,7 @@ export class RangeSensor {
 	} else {
 	    let hit: Hit = this.robot.castRay(
 		p[0], p[1], -this.robot.direction + Math.PI/2.0,
-		this.max);
+		this.max, true);
 	    if (hit) {
 		if (this.robot.debug) {
 		    canvas.fill(new Color(0, 255, 0));
@@ -107,18 +107,27 @@ export class RangeSensor {
 export class Camera {
     public cameraShape: number[];
     public camera: Hit[];
+    public robotHits: Hit[][];
     public robot: Robot;
 
     constructor(robot: Robot) {
 	this.robot = robot;
 	this.cameraShape = [256, 128];
 	this.camera = new Array(this.cameraShape[0]);
+	this.robotHits = new Array(this.cameraShape[0]);
     }
 
     update(canvas: Canvas) {
 	for (let i=0; i<this.cameraShape[0]; i++) {
 	    const angle: number = i/this.cameraShape[0] * 60 - 30;
 	    this.camera[i] = this.robot.castRay(
+		this.robot.x, this.robot.y,
+		Math.PI/2 -this.robot.direction - angle*Math.PI/180.0, 1000, false);
+	}
+	// Only needed if other robots:
+	for (let i=0; i<this.cameraShape[0]; i++) {
+	    const angle: number = i/this.cameraShape[0] * 60 - 30;
+	    this.robotHits[i] = this.robot.castRayRobot(
 		this.robot.x, this.robot.y,
 		Math.PI/2 -this.robot.direction - angle*Math.PI/180.0, 1000);
 	}
@@ -133,10 +142,12 @@ export class Camera {
     takePicture(): Picture {
 	const pic: Picture = new Picture(this.cameraShape[0], this.cameraShape[1]);
 	const size: number = Math.max(this.robot.world.w, this.robot.world.h);
+	let hcolor: Color = null;
+	// draw non-robot walls first:
 	for (let i=0; i < this.cameraShape[0]; i++) {
 	    const hit: Hit = this.camera[i];
 	    let high: number;
-	    let hcolor: Color = null;
+	    hcolor = null;
 	    if (hit) {
 		const s: number = Math.max(Math.min(1.0 - hit.distance/size, 1.0), 0.0);
 		const r: number = hit.color.red;
@@ -156,6 +167,23 @@ export class Camera {
 			pic.set(i, j, hcolor);
 		} else { // ground
 		    pic.set(i, j, new Color(0, 128, 0));
+		}
+	    }
+	}
+	// Other robots, draw on top of walls:
+	for (let i=0; i < this.cameraShape[0]; i++) {
+	    const hits: Hit[] = this.robotHits[i];
+	    hits.sort((a, b) => b.distance - a.distance); // further away first
+	    for (let hit of hits) {
+		const s: number = Math.max(Math.min(1.0 - hit.distance/size, 1.0), 0.0);
+		const distance_to: number = this.cameraShape[1]/2 * (1.0 - s);
+		const height: number = 30 * s;
+		const r: number = hit.color.red;
+		const g: number = hit.color.green;
+		const b: number = hit.color.blue;
+		hcolor = new Color(r * s, g * s, b * s);
+		for (let j=0; j < height; j++) {
+		    pic.set(i, this.cameraShape[1] - j - 1 - Math.floor(distance_to), hcolor);
 		}
 	    }
 	}

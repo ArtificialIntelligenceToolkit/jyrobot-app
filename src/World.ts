@@ -4,10 +4,12 @@ import {Robot} from "./Robot";
 export class Wall {
     public color: Color;
     public lines: Line[];
+    public robot: Robot;
 
-    constructor(color: Color, ...lines: Line[]) {
+    constructor(color: Color, robot: Robot, ...lines: Line[]) {
 	this.color = color;
 	this.lines = lines;
+	this.robot = robot;
     }
 }
 
@@ -35,10 +37,10 @@ export class World {
         const p3 = new Point(this.w, this.h);
         const p4 = new Point(this.w, 0);
 	// Not a box, but four walls:
-        this.addWall(this.boundary_wall_color, new Line(p1, p2));
-        this.addWall(this.boundary_wall_color, new Line(p2, p3));
-        this.addWall(this.boundary_wall_color, new Line(p3, p4));
-        this.addWall(this.boundary_wall_color, new Line(p4, p1));
+        this.addWall(this.boundary_wall_color, null, new Line(p1, p2));
+        this.addWall(this.boundary_wall_color, null, new Line(p2, p3));
+        this.addWall(this.boundary_wall_color, null, new Line(p3, p4));
+        this.addWall(this.boundary_wall_color, null, new Line(p4, p1));
 	for (let box of config.boxes) {
 	    this.addBox(new Color(box.color[0], box.color[1], box.color[2]),
 			box.p1.x, box.p1.y, box.p2.x, box.p2.y);
@@ -55,23 +57,31 @@ export class World {
         const p3 = new Point(x2, y2);
         const p4 = new Point(x1, y2);
 	// Pairs of points make Line:
-	this.addWall(color,
+	this.addWall(color, null,
 		     new Line(p1, p2),
 		     new Line(p2, p3),
 		     new Line(p3, p4),
 		     new Line(p4, p1));
     }
 
-    addWall(c: Color, ...lines: Line[]) {
-        this.walls.push(new Wall(c, ...lines));
+    addWall(c: Color, robot: Robot, ...lines: Line[]) {
+        this.walls.push(new Wall(c, robot, ...lines));
     }
 
     addRobot(robot: Robot) {
-      this.robots.push(robot);
-      robot.world = this;
+	this.robots.push(robot);
+	robot.world = this;
+	this.addWall(robot.color, robot, ...robot.bounding_lines);
     }
 
     update(canvas: Canvas, time: number) {
+	// Draw robots:
+        for (let robot of this.robots) {
+            robot.update(canvas, time);
+        }
+    }
+
+    draw(canvas: Canvas) {
 	canvas.clear();
         canvas.noStroke();
         canvas.fill(this.ground_color);
@@ -103,7 +113,6 @@ export class World {
         }
 	// Draw robots:
         for (let robot of this.robots) {
-            robot.update(canvas, time);
             robot.draw(canvas);
         }
     }
