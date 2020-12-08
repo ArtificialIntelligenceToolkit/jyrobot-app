@@ -149,7 +149,7 @@ export class Camera {
 		const g: number = hit.color.green;
 		const b: number = hit.color.blue;
 		hcolor = new Color(r * sc, g * sc, b * sc);
-		high = (1.0 - s) * this.cameraShape[1]/2;
+		high = (1.0 - s) * this.cameraShape[1];
 	    } else {
 		high = 0;
 	    }
@@ -212,7 +212,7 @@ export class DepthCamera extends Camera {
 		const s: number = Math.max(Math.min(1.0 - hit.distance/size, 1.0), 0.0);
 		const sc: number = Math.max(Math.min(1.0 - hit.distance/size * this.colorsFadeWithDistance, 1.0), 0.0);
 		hcolor = new Color(255 * sc);
-		high = (1.0 - s) * this.cameraShape[1]/2;
+		high = (1.0 - s) * this.cameraShape[1];
 	    } else {
 		high = 0;
 	    }
