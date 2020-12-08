@@ -88,8 +88,8 @@ export class World {
         canvas.rect(this.at_x, this.at_y, this.w, this.h);
 	// Draw walls:
         for (let wall of this.walls) {
-            const c: Color = wall.color;
-	    if (wall.lines.length >= 1) {
+	    if (wall.lines.length >= 1 && wall.robot === null) {
+	        const c: Color = wall.color;
 		canvas.noStroke();
 		canvas.fill(c);
 		canvas.beginShape();

@@ -52,6 +52,7 @@ export class Robot {
 	this.cameras = [];
 	this.state = "";
 	this.time = 0;
+	this.initBoundingBox();
     }
 
     constructor(config: any) {
@@ -225,6 +226,40 @@ export class Robot {
 	return minimum;
     }
 
+    initBoundingBox() {
+	const px = this.x;
+	const py = this.y;
+	const pdirection = this.direction;
+	const p1: number[] = this.rotateAround(px, py, 10, pdirection + Math.PI/4 + 0 * Math.PI/2);
+	const p2: number[] = this.rotateAround(px, py, 10, pdirection + Math.PI/4 + 1 * Math.PI/2);
+	const p3: number[] = this.rotateAround(px, py, 10, pdirection + Math.PI/4 + 2 * Math.PI/2);
+	const p4: number[] = this.rotateAround(px, py, 10, pdirection + Math.PI/4 + 3 * Math.PI/2);
+	this.updateBoundingBox(p1, p2, p3, p4);
+    }
+
+    updateBoundingBox(p1: number[], p2: number[],
+		      p3: number[], p4: number[]) {
+	this.bounding_lines[0].p1.x = p1[0];
+	this.bounding_lines[0].p1.y = p1[1];
+	this.bounding_lines[0].p2.x = p2[0];
+	this.bounding_lines[0].p2.y = p2[1];
+
+	this.bounding_lines[1].p1.x = p2[0];
+	this.bounding_lines[1].p1.y = p2[1];
+	this.bounding_lines[1].p2.x = p3[0];
+	this.bounding_lines[1].p2.y = p3[1];
+
+	this.bounding_lines[2].p1.x = p3[0];
+	this.bounding_lines[2].p1.y = p3[1];
+	this.bounding_lines[2].p2.x = p4[0];
+	this.bounding_lines[2].p2.y = p4[1];
+
+	this.bounding_lines[3].p1.x = p4[0];
+	this.bounding_lines[3].p1.y = p4[1];
+	this.bounding_lines[3].p2.x = p1[0];
+	this.bounding_lines[3].p2.y = p1[1];
+    }
+
     update(time: number) {
 	this.time = time;
 	if (this.doTrace) {
@@ -247,25 +282,7 @@ export class Robot {
 	const p3: number[] = this.rotateAround(px, py, 10, pdirection + Math.PI/4 + 2 * Math.PI/2);
 	const p4: number[] = this.rotateAround(px, py, 10, pdirection + Math.PI/4 + 3 * Math.PI/2);
 
-	this.bounding_lines[0].p1.x = p1[0];
-	this.bounding_lines[0].p1.y = p1[1];
-	this.bounding_lines[0].p2.x = p2[0];
-	this.bounding_lines[0].p2.y = p2[1];
-
-	this.bounding_lines[1].p1.x = p2[0];
-	this.bounding_lines[1].p1.y = p2[1];
-	this.bounding_lines[1].p2.x = p3[0];
-	this.bounding_lines[1].p2.y = p3[1];
-
-	this.bounding_lines[2].p1.x = p3[0];
-	this.bounding_lines[2].p1.y = p3[1];
-	this.bounding_lines[2].p2.x = p4[0];
-	this.bounding_lines[2].p2.y = p4[1];
-
-	this.bounding_lines[3].p1.x = p4[0];
-	this.bounding_lines[3].p1.y = p4[1];
-	this.bounding_lines[3].p2.x = p1[0];
-	this.bounding_lines[3].p2.y = p1[1];
+	this.updateBoundingBox(p1, p2, p3, p4);
 
 	this.stalled = false;
 	// if intersection, can't move:

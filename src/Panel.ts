@@ -9,7 +9,7 @@ import {
     MainAreaWidget,
     WidgetTracker,
 } from '@jupyterlab/apputils';
-import { addIcon, clearIcon, listIcon, runIcon, stopIcon } from '@jupyterlab/ui-components';
+import { addIcon, clearIcon, listIcon, runIcon, fastForwardIcon, stopIcon } from '@jupyterlab/ui-components';
 
 import {World} from "./World";
 import {Robot} from "./Robot";
@@ -73,6 +73,8 @@ export class JyroPanel extends MainAreaWidget {
 
 	// Update and draw it once:
 	world.update(world.time);
+	// A second time to allow all robots to see each other:
+	world.update(world.time);
 	world.draw(panel._canvas);
 
 	// Itinitalize robot velocities:
@@ -125,6 +127,16 @@ export class JyroPanel extends MainAreaWidget {
 		    loop = window.setInterval(runLoop, 1000 / updates_per_second);
 		}
 	    },
+	    icon: fastForwardIcon,
+	});
+
+	mycommands.addCommand('jyro/world:step', {
+	    execute: () => {
+		if (loop === null) {
+		    world.update(world.time);
+		    world.draw(panel._canvas);
+		}
+	    },
 	    icon: runIcon,
 	});
 
@@ -163,6 +175,13 @@ export class JyroPanel extends MainAreaWidget {
             new CommandToolbarButton({
 		commands: mycommands,
 		id: 'jyro/world:zoom-out'
+            })
+	);
+	this.toolbar.addItem(
+            'step',
+            new CommandToolbarButton({
+		commands: mycommands,
+		id: 'jyro/world:step'
             })
 	);
 	this.toolbar.addItem(

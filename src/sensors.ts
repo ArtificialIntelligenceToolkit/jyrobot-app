@@ -99,10 +99,12 @@ export class Camera {
     public camera: Hit[];
     public robotHits: Hit[][];
     public robot: Robot;
+    public fadeWithDistance: number; // 0 = no fade, 1.0 = max fade
 
     constructor(robot: Robot) {
 	this.robot = robot;
 	this.cameraShape = [256, 128];
+	this.fadeWithDistance = 0.5;
 	this.camera = new Array(this.cameraShape[0]);
 	this.robotHits = new Array(this.cameraShape[0]);
     }
@@ -140,10 +142,11 @@ export class Camera {
 	    hcolor = null;
 	    if (hit) {
 		const s: number = Math.max(Math.min(1.0 - hit.distance/size, 1.0), 0.0);
+		const sc: number = Math.max(Math.min(1.0 - hit.distance/size * this.fadeWithDistance, 1.0), 0.0);
 		const r: number = hit.color.red;
 		const g: number = hit.color.green;
 		const b: number = hit.color.blue;
-		hcolor = new Color(r * s, g * s, b * s);
+		hcolor = new Color(r * sc, g * sc, b * sc);
 		high = (1.0 - s) * 128;
 		//pg.line(i, 0 + high/2, i, 128 - high/2);
 	    } else {
@@ -169,12 +172,13 @@ export class Camera {
 		    // Behind this wall
 		    break;
 		const s: number = Math.max(Math.min(1.0 - hit.distance/size, 1.0), 0.0);
+		const sc: number = Math.max(Math.min(1.0 - hit.distance/size * this.fadeWithDistance, 1.0), 0.0);
 		const distance_to: number = this.cameraShape[1]/2 * (1.0 - s);
 		const height: number = 30 * s;
 		const r: number = hit.color.red;
 		const g: number = hit.color.green;
 		const b: number = hit.color.blue;
-		hcolor = new Color(r * s, g * s, b * s);
+		hcolor = new Color(r * sc, g * sc, b * sc);
 		for (let j=0; j < height; j++) {
 		    pic.set(i, this.cameraShape[1] - j - 1 - Math.round(distance_to), hcolor);
 		}
