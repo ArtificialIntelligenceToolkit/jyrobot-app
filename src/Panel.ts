@@ -15,7 +15,7 @@ import {World} from "./World";
 import {Robot} from "./Robot";
 import {Canvas, Color, Picture} from "./utils";
 
-const PANEL_CLASS = 'jyro-panel';
+const PANEL_CLASS = 'jyrobot-panel';
 
 export class JyroRobot extends MainAreaWidget {
     private _translator: ITranslator;
@@ -44,8 +44,8 @@ export class JyroRobot extends MainAreaWidget {
 	this._trans = this._translator.load('jupyterlab');
 
 	this.addClass(PANEL_CLASS);
-	this.id = 'JyroPanel';
-	this.title.label = this._trans.__('Jyro: Robot ' + robot.name);
+	this.id = 'JyrobotPanel';
+	this.title.label = this._trans.__('Jyrobot: Robot ' + robot.name);
 	this.title.closable = true;
 
 	//this.addWidget(this._canvas);
@@ -106,14 +106,14 @@ export class JyroPanel extends MainAreaWidget {
 	this._trans = this._translator.load('jupyterlab');
 
 	this.addClass(PANEL_CLASS);
-	this.id = 'JyroPanel';
-	this.title.label = this._trans.__('Jyro');
+	this.id = 'JyrobotPanel';
+	this.title.label = this._trans.__('Jyrobot');
 	this.title.closable = true;
 	this._scale = 1.0;
 
 	const mycommands = new CommandRegistry();
 
-	mycommands.addCommand('jyro/world:stop', {
+	mycommands.addCommand('jyrobot/world:stop', {
 	    execute: () => {
 		clearInterval(loop);
 		loop = null;
@@ -121,7 +121,7 @@ export class JyroPanel extends MainAreaWidget {
 	    icon: stopIcon,
 	});
 
-	mycommands.addCommand('jyro/world:start', {
+	mycommands.addCommand('jyrobot/world:start', {
 	    execute: () => {
 		if (loop === null) {
 		    loop = window.setInterval(runLoop, 1000 / updates_per_second);
@@ -130,7 +130,7 @@ export class JyroPanel extends MainAreaWidget {
 	    icon: fastForwardIcon,
 	});
 
-	mycommands.addCommand('jyro/world:step', {
+	mycommands.addCommand('jyrobot/world:step', {
 	    execute: () => {
 		if (loop === null) {
 		    world.update(world.time);
@@ -140,7 +140,7 @@ export class JyroPanel extends MainAreaWidget {
 	    icon: runIcon,
 	});
 
-	mycommands.addCommand('jyro/world:zoom-in', {
+	mycommands.addCommand('jyrobot/world:zoom-in', {
 	    execute: () => {
 		this._scale *= 1.1;
 		canvas.resetScale();
@@ -152,7 +152,7 @@ export class JyroPanel extends MainAreaWidget {
 	    icon: addIcon,
 	});
 
-	mycommands.addCommand('jyro/world:zoom-out', {
+	mycommands.addCommand('jyrobot/world:zoom-out', {
 	    execute: () => {
 		this._scale *= 0.9;
 		canvas.resetScale();
@@ -167,35 +167,35 @@ export class JyroPanel extends MainAreaWidget {
             'zoom-in',
             new CommandToolbarButton({
 		commands: mycommands,
-		id: 'jyro/world:zoom-in'
+		id: 'jyrobot/world:zoom-in'
             })
 	);
 	this.toolbar.addItem(
             'zoom-out',
             new CommandToolbarButton({
 		commands: mycommands,
-		id: 'jyro/world:zoom-out'
+		id: 'jyrobot/world:zoom-out'
             })
 	);
 	this.toolbar.addItem(
             'step',
             new CommandToolbarButton({
 		commands: mycommands,
-		id: 'jyro/world:step'
+		id: 'jyrobot/world:step'
             })
 	);
 	this.toolbar.addItem(
             'start',
             new CommandToolbarButton({
 		commands: mycommands,
-		id: 'jyro/world:start'
+		id: 'jyrobot/world:start'
             })
 	);
 	this.toolbar.addItem(
             'stop',
             new CommandToolbarButton({
 		commands: mycommands,
-		id: 'jyro/world:stop'
+		id: 'jyrobot/world:stop'
             })
 	);
     }

@@ -16,6 +16,7 @@ import { JyroRobot, JyroPanel } from './Panel';
 import { Robot } from './Robot';
 import {World} from './World';
 import {Color} from './utils';
+import {requestAPI} from './handler';
 
 export async function populateMenu(commands: CommandRegistry,
 				   shell: JupyterFrontEnd.IShell,
@@ -23,13 +24,13 @@ export async function populateMenu(commands: CommandRegistry,
 				   translator: ITranslator,
 				   robots: Robot[]) {
 
-    const open_table = "jyro:open-robot";
+    const open_table = "jyrobot:open-robot";
 
     const jyroMenu = new Menu({commands});
-    jyroMenu.title.label = 'Jyro';
+    jyroMenu.title.label = 'Jyrobot';
     for (const robot of robots) {
 	// Get the name here:
-	const command = "jyro:open-robot-" + robot.name;
+	const command = "jyrobot:open-robot-" + robot.name;
 	console.log("command", command);
 	commands.addCommand(command, {
 	    label: "Open " + robot.name,
@@ -51,7 +52,7 @@ export async function populateMenu(commands: CommandRegistry,
 
 
 const extension: JupyterFrontEndPlugin<void> = {
-    id: 'jyro',
+    id: 'jyrobot',
     autoStart: true,
     requires: [ICommandPalette, ITranslator, ILauncher, IMainMenu],
     activate: async (
@@ -61,12 +62,22 @@ const extension: JupyterFrontEndPlugin<void> = {
 	launcher: ILauncher,
 	mainMenu: IMainMenu
     ) => {
-	console.log('JupyterLab extension jyro is activated!');
+	console.log('JupyterLab extension jyrobot is activated!');
 	const { commands, shell } = app;
 	const manager = app.serviceManager;
 	const trans = translator || nullTranslator;
 	const _trans = trans.load('jupyterlab');
 
+	requestAPI<any>('get_example')
+	    .then(data => {
+		console.log(data);
+	    })
+	    .catch(reason => {
+		console.error(
+		    `The jyrobot server extension appears to be missing.\n${reason}`
+		);
+	    });
+	
 	let config: any = {
 	    world: {
 		width: 500,
@@ -134,14 +145,14 @@ const extension: JupyterFrontEndPlugin<void> = {
 	if (launcher) {
 	    console.log(launcher);
 	    launcher.add({
-		command: "jyro:launch",
+		command: "jyrobot:launch",
 		category: _trans.__("Applications")
 	    });
 	}
 
-	commands.addCommand("jyro:launch", {
-	    label: 'Launch Jyro',
-	    caption: 'Launch Jyro',
+	commands.addCommand("jyrobot:launch", {
+	    label: 'Launch Jyrobot',
+	    caption: 'Launch Jyrobot',
 	    execute: createPanel
 	});
 

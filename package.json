@@ -1,5 +1,5 @@
 {
-  "name": "jyro",
+  "name": "jyrobot",
   "version": "0.1.0",
   "description": "A JupyterLab extension.",
   "keywords": [
@@ -7,9 +7,9 @@
     "jupyterlab",
     "jupyterlab-extension"
   ],
-  "homepage": "https://github.com/my_name/myextension",
+  "homepage": "https://github.com/Calysto/jyrobot",
   "bugs": {
-    "url": "https://github.com/my_name/myextension/issues"
+    "url": "https://github.com/Calysto/jyrobot/issues"
   },
   "license": "BSD-3-Clause",
   "author": "Douglas Blank",
@@ -32,7 +32,7 @@
     "build:lib": "tsc",
     "clean": "jlpm run clean:lib",
     "clean:lib": "rimraf lib tsconfig.tsbuildinfo",
-    "clean:labextension": "rimraf jyro/labextension",
+    "clean:labextension": "rimraf jyrobot/labextension",
     "clean:all": "jlpm run clean:lib && jlpm run clean:labextension",
     "eslint": "eslint . --ext .ts,.tsx --fix",
     "eslint:check": "eslint . --ext .ts,.tsx",
@@ -66,6 +66,6 @@
   ],
   "jupyterlab": {
     "extension": true,
-    "outputDir": "jyro/labextension"
+    "outputDir": "jyrobot/labextension"
   }
 }
