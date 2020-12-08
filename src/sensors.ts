@@ -19,12 +19,12 @@ export class RangeSensor {
     public time: number = 0;
     public robot: Robot;
 
-    constructor(robot: Robot, position: number, direction: number, max: number, width: number) {
+    constructor(robot: Robot, config: any) {
 	this.robot = robot;
-	this.position = position;
-	this.direction = direction;
-	this.max = max;
-	this.width = width;
+	this.position = config.position || 10;
+	this.direction = config.direction || 0;
+	this.max = config.max || 100;
+	this.width = config.width || 1.0;
 	this.distance = this.reading * this.max;
     }
 
@@ -99,26 +99,28 @@ export class Camera {
     public camera: Hit[];
     public robotHits: Hit[][];
     public robot: Robot;
-    public fadeWithDistance: number; // 0 = no fade, 1.0 = max fade
+    public colorsFadeWithDistance: number; // 0 = no fade, 1.0 = max fade
+    public angle; // degrees
 
-    constructor(robot: Robot) {
+    constructor(robot: Robot, config: any) {
 	this.robot = robot;
-	this.cameraShape = [256, 128];
-	this.fadeWithDistance = 0.5;
+	this.cameraShape = [config.width || 256, config.height || 128];
+	this.colorsFadeWithDistance = config.colorsFadeWithDistance || 1.0;
+	this.angle = config.angle || 60; // in degrees
 	this.camera = new Array(this.cameraShape[0]);
 	this.robotHits = new Array(this.cameraShape[0]);
     }
 
     update(time: number) {
 	for (let i=0; i<this.cameraShape[0]; i++) {
-	    const angle: number = i/this.cameraShape[0] * 60 - 30;
+	    const angle: number = i/this.cameraShape[0] * this.angle - this.angle/2;
 	    this.camera[i] = this.robot.castRay(
 		this.robot.x, this.robot.y,
 		Math.PI/2 -this.robot.direction - angle*Math.PI/180.0, 1000, false);
 	}
 	// Only needed if other robots:
 	for (let i=0; i<this.cameraShape[0]; i++) {
-	    const angle: number = i/this.cameraShape[0] * 60 - 30;
+	    const angle: number = i/this.cameraShape[0] * this.angle - this.angle/2;
 	    this.robotHits[i] = this.robot.castRayRobot(
 		this.robot.x, this.robot.y,
 		Math.PI/2 -this.robot.direction - angle*Math.PI/180.0, 1000);
@@ -142,20 +144,19 @@ export class Camera {
 	    hcolor = null;
 	    if (hit) {
 		const s: number = Math.max(Math.min(1.0 - hit.distance/size, 1.0), 0.0);
-		const sc: number = Math.max(Math.min(1.0 - hit.distance/size * this.fadeWithDistance, 1.0), 0.0);
+		const sc: number = Math.max(Math.min(1.0 - hit.distance/size * this.colorsFadeWithDistance, 1.0), 0.0);
 		const r: number = hit.color.red;
 		const g: number = hit.color.green;
 		const b: number = hit.color.blue;
 		hcolor = new Color(r * sc, g * sc, b * sc);
-		high = (1.0 - s) * 128;
-		//pg.line(i, 0 + high/2, i, 128 - high/2);
+		high = (1.0 - s) * this.cameraShape[1]/2;
 	    } else {
 		high = 0;
 	    }
 	    for (let j = 0; j < this.cameraShape[1]; j++) {
-		if (j < high/2) { //256 - high/2.0) { // sky
+		if (j < high/2) { // sky
 		    pic.set(i, j, new Color(0, 0, 128));
-		} else if (j < this.cameraShape[1] - high/2) { //256 - high && hcolor != null) { // hit
+		} else if (j < this.cameraShape[1] - high/2) { // hit
 		    if (hcolor !== null)
 			pic.set(i, j, hcolor);
 		} else { // ground
@@ -172,13 +173,82 @@ export class Camera {
 		    // Behind this wall
 		    break;
 		const s: number = Math.max(Math.min(1.0 - hit.distance/size, 1.0), 0.0);
-		const sc: number = Math.max(Math.min(1.0 - hit.distance/size * this.fadeWithDistance, 1.0), 0.0);
+		const sc: number = Math.max(Math.min(1.0 - hit.distance/size * this.colorsFadeWithDistance, 1.0), 0.0);
 		const distance_to: number = this.cameraShape[1]/2 * (1.0 - s);
 		const height: number = 30 * s;
 		const r: number = hit.color.red;
 		const g: number = hit.color.green;
 		const b: number = hit.color.blue;
 		hcolor = new Color(r * sc, g * sc, b * sc);
+		for (let j=0; j < height; j++) {
+		    pic.set(i, this.cameraShape[1] - j - 1 - Math.round(distance_to), hcolor);
+		}
+	    }
+	}
+	return pic;
+    }
+}
+
+export class DepthCamera extends Camera {
+    public reflectGround: boolean;
+    public reflectSky: boolean;
+
+    constructor(robot: Robot, config: any) {
+	super(robot, config);
+	this.reflectGround = config.reflectGround || true;
+	this.reflectSky = config.reflectGround || false;
+    }
+
+    takePicture(): Picture {
+	const pic: Picture = new Picture(this.cameraShape[0], this.cameraShape[1]);
+	const size: number = Math.max(this.robot.world.w, this.robot.world.h);
+	let hcolor: Color = null;
+	// draw non-robot walls first:
+	for (let i=0; i < this.cameraShape[0]; i++) {
+	    const hit: Hit = this.camera[i];
+	    let high: number;
+	    hcolor = null;
+	    if (hit) {
+		const s: number = Math.max(Math.min(1.0 - hit.distance/size, 1.0), 0.0);
+		const sc: number = Math.max(Math.min(1.0 - hit.distance/size * this.colorsFadeWithDistance, 1.0), 0.0);
+		hcolor = new Color(255 * sc);
+		high = (1.0 - s) * this.cameraShape[1]/2;
+	    } else {
+		high = 0;
+	    }
+	    const horizon = this.cameraShape[1]/2;
+	    for (let j = 0; j < this.cameraShape[1]; j++) {
+		let sky = Math.max(Math.min(1.0 - j/horizon * this.colorsFadeWithDistance, 1.0), 0.0);
+		let ground = Math.max(Math.min((j - horizon)/horizon * this.colorsFadeWithDistance, 1.0), 0.0);
+		if (j < high/2) { // sky
+		    if (this.reflectSky) {
+			let color = new Color(255 - (255 * sky));
+			pic.set(i, j, color);
+		    }
+		} else if (j < this.cameraShape[1] - high/2) { // hit
+		    if (hcolor !== null)
+			pic.set(i, j, hcolor);
+		} else { // ground
+		    if (this.reflectGround) {
+			let color = new Color(255 * ground);
+			pic.set(i, j, color);
+		    }
+		}
+	    }
+	}
+	// Other robots, draw on top of walls:
+	for (let i=0; i < this.cameraShape[0]; i++) {
+	    const hits: Hit[] = this.robotHits[i];
+	    hits.sort((a, b) => b.distance - a.distance); // further away first
+	    for (let hit of hits) {
+		if (this.camera[i] && (hit.distance > this.camera[i].distance))
+		    // Behind this wall
+		    break;
+		const s: number = Math.max(Math.min(1.0 - hit.distance/size, 1.0), 0.0);
+		const sc: number = Math.max(Math.min(1.0 - hit.distance/size * this.colorsFadeWithDistance, 1.0), 0.0);
+		const distance_to: number = this.cameraShape[1]/2 * (1.0 - s);
+		const height: number = 30 * s;
+		hcolor = new Color(255 * sc);
 		for (let j=0; j < height; j++) {
 		    pic.set(i, this.cameraShape[1] - j - 1 - Math.round(distance_to), hcolor);
 		}

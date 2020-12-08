@@ -30,17 +30,17 @@ export async function populateMenu(commands: CommandRegistry,
     jyroMenu.title.label = 'Jyrobot';
     for (const robot of robots) {
 	// Get the name here:
-	const command = "jyrobot:open-robot-" + robot.name;
-	console.log("command", command);
-	commands.addCommand(command, {
-	    label: "Open " + robot.name,
-	    //icon: ICON_TABLE[table_type.name],
-	    execute: () => {
-		const widget = new JyroRobot(translator, robot);
-		shell.add(widget, 'main');
-	    }
-	});
-	jyroMenu.addItem({command});
+	for (let index=0; index < robot.cameras.length; index++) {
+	    const command = "jyrobot:open-robot-" + robot.name + "-" + index;
+	    commands.addCommand(command, {
+		label: "View Robot " + robot.name + " Camera " + index,
+		execute: () => {
+		    const widget = new JyroRobot(translator, robot, index);
+		    shell.add(widget, 'main');
+		}
+	    });
+	    jyroMenu.addItem({command});
+	}
     }
 
     const jyroGroup = [
@@ -94,7 +94,8 @@ const extension: JupyterFrontEndPlugin<void> = {
 		    name: "Red",
 		    x: 430, y: 50, direction: Math.PI,
 		    color: [255, 0, 0],
-		    cameras: [null],
+		    cameras: [{type: "Camera", width: 256, height: 128, colorsFadeWithDistance: 1.0,
+			       angle: 60}],
 		    rangeSensors: [
 			{position: 8.2, direction: 0, max: 100, width: 0.05},
 			{position: 8.2, direction: Math.PI/8, max: 20, width: 1.0},
@@ -111,7 +112,10 @@ const extension: JupyterFrontEndPlugin<void> = {
 		    name: "Blue",
 		    x: 30, y: 50, direction: 0,
 		    color: [0, 0, 255],
-		    cameras: [null],
+		    cameras: [
+			{type: "DepthCamera", width: 256, height: 128, colorsFadeWithDistance: 1.0, angle: 60},
+			{type: "Camera", width: 256, height: 128, colorsFadeWithDistance: 1.0, angle: 60},
+		    ],
 		    rangeSensors: [
 			{position: 8.2, direction: 0, max: 100, width: 0.05},
 			{position: 8.2, direction: Math.PI/8, max: 20, width: 1.0},

@@ -27,8 +27,8 @@ export class World {
 
     constructor(config: any) {
         this.time = 0;
-        this.w = config.width;
-        this.h = config.height;
+        this.w = config.width || 500;
+        this.h = config.height || 250;
 	this.boundary_wall_color = new Color(128, 0, 128);
 	this.ground_color = new Color(0, 128, 0)
 	// Put a wall around boundary:
@@ -41,7 +41,7 @@ export class World {
         this.addWall(this.boundary_wall_color, null, new Line(p2, p3));
         this.addWall(this.boundary_wall_color, null, new Line(p3, p4));
         this.addWall(this.boundary_wall_color, null, new Line(p4, p1));
-	for (let box of config.boxes) {
+	for (let box of config.boxes || []) {
 	    this.addBox(new Color(box.color[0], box.color[1], box.color[2]),
 			box.p1.x, box.p1.y, box.p2.x, box.p2.y);
 	}

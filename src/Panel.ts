@@ -21,15 +21,17 @@ export class JyroRobot extends MainAreaWidget {
     private _translator: ITranslator;
     private _trans: TranslationBundle;
     private _canvas: Canvas;
+    private _index: number;
 
-    constructor(translator: ITranslator, robot: Robot) {
+    constructor(translator: ITranslator, robot: Robot, index: number) {
 	const canvas = new Canvas(500, 500, 2.0); // width, height, scale
 	super({content: canvas});
 	this._canvas = canvas;
+	this._index = index;
 	this._canvas.font("13px Arial");
 
 	window.setInterval(() => {
-	    let pic: Picture = robot.cameras[0].takePicture();
+	    let pic: Picture = robot.cameras[this._index].takePicture();
 	    this._canvas.clear();
 	    this._canvas.picture(pic, 0, 0, 2.0); // x, y, scale
 	    this._canvas.fill(new Color(0, 0, 0, 255));
@@ -45,7 +47,7 @@ export class JyroRobot extends MainAreaWidget {
 
 	this.addClass(PANEL_CLASS);
 	this.id = 'JyrobotPanel';
-	this.title.label = this._trans.__('Jyrobot: Robot ' + robot.name);
+	this.title.label = this._trans.__('Jyrobot: Robot ' + robot.name + ' Camera ' + this._index);
 	this.title.closable = true;
 
 	//this.addWidget(this._canvas);

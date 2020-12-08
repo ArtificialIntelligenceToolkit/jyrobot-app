@@ -1,7 +1,7 @@
 import {Color, Line, Point, Picture, Canvas} from "./utils";
 import {Hit} from "./Hit";
 import {World} from "./World";
-import {Camera, RangeSensor} from "./sensors";
+import {Camera, DepthCamera, RangeSensor} from "./sensors";
 
 export class Robot {
     public name: string;
@@ -57,18 +57,31 @@ export class Robot {
 
     constructor(config: any) {
 	this.initialize();
-	this.name = config.name;
-	this.x = config.x;
-	this.y = config.y;
-	this.direction = config.direction;
-	this.color = new Color(config.color[0], config.color[1], config.color[2]) ;
-	this.body = config.body;
-	for (let cameraConfig of config.cameras) {
-	    let camera = new Camera(this);
-	    this.cameras.push(camera);
+	this.name = config.name || "Robbie";
+	this.x = config.x || 100;
+	this.y = config.y || 100;
+	this.direction = config.direction || 0;
+	if (typeof config.color !== "undefined") {
+	    this.color = new Color(config.color[0], config.color[1], config.color[2]);
+	} else {
+	    this.color = new Color(255, 0, 0);
 	}
-	for (let rangeConfig of config.rangeSensors) {
-	    let sensor = new RangeSensor(this, rangeConfig.position, rangeConfig.direction, rangeConfig.max, rangeConfig.width);
+	this.body = config.body || [];
+	for (let cameraConfig of config.cameras || []) {
+	    let camera = null;
+	    if (cameraConfig.type === "Camera") {
+		camera = new Camera(this, cameraConfig);
+	    } else if (cameraConfig.type === "DepthCamera") {
+		camera = new DepthCamera(this, cameraConfig);
+	    } else {
+		console.log("Unknown camera type:", cameraConfig.type);
+	    }
+	    if (camera !== null)
+		this.cameras.push(camera);
+	}
+	console.log("Done!");
+	for (let rangeConfig of config.rangeSensors || []) {
+	    let sensor = new RangeSensor(this, rangeConfig);
 	    this.range_sensors.push(sensor);
 	}
     }
