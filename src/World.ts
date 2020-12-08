@@ -74,10 +74,10 @@ export class World {
 	this.addWall(robot.color, robot, ...robot.bounding_lines);
     }
 
-    update(canvas: Canvas, time: number) {
+    update(time: number) {
 	// Draw robots:
         for (let robot of this.robots) {
-            robot.update(canvas, time);
+            robot.update(time);
         }
     }
 

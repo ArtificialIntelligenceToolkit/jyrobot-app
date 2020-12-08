@@ -225,19 +225,13 @@ export class Robot {
 	return minimum;
     }
 
-    update(canvas: Canvas, time: number) {
+    update(time: number) {
 	this.time = time;
 	if (this.doTrace) {
 	    this.trace.push(new Point(this.x, this.y));
 	    if (this.trace.length > this.max_trace_length) {
 		this.trace.shift();
 	    }
-	    canvas.strokeStyle(new Color(200, 200, 200), 1);
-	    canvas.beginShape();
-	    for (let point of this.trace) {
-		canvas.vertex(point.x, point.y);
-	    }
-	    canvas.stroke();
 	}
 	//this.direction += PI/180;
 	const tvx: number = this.vx * Math.sin(-this.direction + Math.PI/2) + this.vy * Math.cos(-this.direction + Math.PI/2);
@@ -302,11 +296,11 @@ export class Robot {
 	}
 	// Range Sensors:
 	for (let range_sensor of this.range_sensors) {
-	    range_sensor.update(canvas);
+	    range_sensor.update(time);
 	}
 	// Cameras:
 	for (let camera of this.cameras) {
-	    camera.update(canvas);
+	    camera.update(time);
 	}
     }
 
@@ -318,6 +312,14 @@ export class Robot {
     }
 
     draw(canvas: Canvas) {
+	if (this.doTrace) {
+	    canvas.strokeStyle(new Color(200, 200, 200), 1);
+	    canvas.beginShape();
+	    for (let point of this.trace) {
+		canvas.vertex(point.x, point.y);
+	    }
+	    canvas.stroke();
+	}
 	if (this.debug) {
 	    canvas.strokeStyle(new Color(255), 1);
 	    canvas.line(this.bounding_lines[0].p1.x, this.bounding_lines[0].p1.y,

@@ -28,7 +28,7 @@ export class RangeSensor {
 	this.distance = this.reading * this.max;
     }
 
-    update(canvas: Canvas) {
+    update(time: number) {
 	let p: number[] = this.robot.rotateAround(
 	    this.robot.x, this.robot.y, this.position, this.robot.direction + this.direction);
 	this.setReading(1.0);
@@ -39,11 +39,6 @@ export class RangeSensor {
 		    p[0], p[1], -this.robot.direction + Math.PI/2.0  + incr,
 		    this.max, true);
 		if (hit) {
-		    if (this.robot.debug) {
-			canvas.fill(new Color(0, 255, 0));
-			canvas.ellipse(p[0], p[1], 5, 5);
-			canvas.ellipse(hit.x, hit.y, 5, 5);
-		    }
 		    if (hit.distance < this.getDistance()) {
 			this.setDistance(hit.distance);
 		    }
@@ -54,11 +49,6 @@ export class RangeSensor {
 		p[0], p[1], -this.robot.direction + Math.PI/2.0,
 		this.max, true);
 	    if (hit) {
-		if (this.robot.debug) {
-		    canvas.fill(new Color(0, 255, 0));
-		    canvas.ellipse(p[0], p[1], 5, 5);
-		    canvas.ellipse(hit.x, hit.y, 5, 5);
-		}
 		if (hit.distance < this.getDistance()) {
 		    this.setDistance(hit.distance);
 		}
@@ -117,7 +107,7 @@ export class Camera {
 	this.robotHits = new Array(this.cameraShape[0]);
     }
 
-    update(canvas: Canvas) {
+    update(time: number) {
 	for (let i=0; i<this.cameraShape[0]; i++) {
 	    const angle: number = i/this.cameraShape[0] * 60 - 30;
 	    this.camera[i] = this.robot.castRay(
@@ -175,6 +165,9 @@ export class Camera {
 	    const hits: Hit[] = this.robotHits[i];
 	    hits.sort((a, b) => b.distance - a.distance); // further away first
 	    for (let hit of hits) {
+		if (this.camera[i] && (hit.distance > this.camera[i].distance))
+		    // Behind this wall
+		    break;
 		const s: number = Math.max(Math.min(1.0 - hit.distance/size, 1.0), 0.0);
 		const distance_to: number = this.cameraShape[1]/2 * (1.0 - s);
 		const height: number = 30 * s;
@@ -183,7 +176,7 @@ export class Camera {
 		const b: number = hit.color.blue;
 		hcolor = new Color(r * s, g * s, b * s);
 		for (let j=0; j < height; j++) {
-		    pic.set(i, this.cameraShape[1] - j - 1 - Math.floor(distance_to), hcolor);
+		    pic.set(i, this.cameraShape[1] - j - 1 - Math.round(distance_to), hcolor);
 		}
 	    }
 	}

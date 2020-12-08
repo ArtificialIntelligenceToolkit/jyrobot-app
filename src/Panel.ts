@@ -72,7 +72,7 @@ export class JyroPanel extends MainAreaWidget {
 	let panel = this;
 
 	// Update and draw it once:
-	world.update(panel._canvas, world.time);
+	world.update(world.time);
 	world.draw(panel._canvas);
 
 	// Itinitalize robot velocities:
@@ -81,7 +81,7 @@ export class JyroPanel extends MainAreaWidget {
 	    world.robots[index].vx = 1.5;
 	}
 	let runLoop = function() {
-	    world.update(panel._canvas, world.time);
+	    world.update(world.time);
 	    world.draw(panel._canvas);
 	    for (let index = 0; index< world.robots.length; index++) {
 		let robot: Robot = world.robots[index];
