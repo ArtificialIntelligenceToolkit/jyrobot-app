@@ -50,7 +50,32 @@ export class JyroRobot extends MainAreaWidget {
 	this.title.label = this._trans.__('Jyrobot: Robot ' + robot.name + ' Camera ' + this._index);
 	this.title.closable = true;
 
-	//this.addWidget(this._canvas);
+	const mycommands = new CommandRegistry();
+
+	mycommands.addCommand('jyrobot/camera:dump3d', {
+	    execute: () => {
+		let json = [];
+		let pic = robot.cameras[this._index].takePicture()
+		for (let x=0; x < pic.width; x+=5) {
+		    for (let y=0; y < pic.height; y+=5) {
+			let dist = pic.get(x,y);
+			if (dist !== 255) { // not sky
+			    json.push({x: pic.width - x - 1, y: pic.height - y - 1, z: dist})
+			}
+		    }
+		}
+		console.log(json);
+	    },
+	    icon: stopIcon,
+	    label: "Take Picture"
+	});
+	this.toolbar.addItem(
+            'takePicture',
+            new CommandToolbarButton({
+		commands: mycommands,
+		id: 'jyrobot/camera:dump3d'
+            })
+	);
     }
 
     format(v: number, decimals: number = 2): number {

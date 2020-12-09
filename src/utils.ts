@@ -173,7 +173,7 @@ export class Canvas extends Widget {
     }
 
     picture(pic: Picture, x: number, y: number, scale: number=1.0) {
-	const scaled: ImageData = this.scaleImageData(pic.get(), scale);
+	const scaled: ImageData = this.scaleImageData(pic.getData(), scale);
 	this.gc.putImageData(scaled, x, y);
     }
 
@@ -303,7 +303,11 @@ export class Picture {
 	this.imageData.data[pos + 3] = color.alpha;
     }
 
-    get(): ImageData {
+    get(x: number, y: number): number {
+	return this.imageData.data[(x + y * this.width) * 4];
+    }
+
+    getData(): ImageData {
 	return this.imageData;
     }
 }
